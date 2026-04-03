@@ -18,11 +18,10 @@
         --elvui-case-txt: #fdfdfd; 
         --elvui-selected: #f9e2af; 
         --elvui-bind-mode: #cba6f7;
-        --elvui-spell-mode: #fab387;
         --elvui-active-target: #33d17a; 
         --elvui-error: #d25c6a;
-        --elvui-castbar: #f9e2af;
         --wow-yellow: #ffd100;
+        --discord-color: #5865F2;
     }
 
     body { 
@@ -32,7 +31,12 @@
         margin: 0; 
         overflow: hidden; 
         user-select: none; 
+        transition: box-shadow 0.3s;
     }
+
+    /* BLOODLUST EFFECT */
+    body.bloodlust { box-shadow: inset 0 0 50px rgba(210, 92, 106, 0.4); animation: bloodlustPulse 1s infinite alternate; }
+    @keyframes bloodlustPulse { 0% { box-shadow: inset 0 0 30px rgba(210, 92, 106, 0.1); } 100% { box-shadow: inset 0 0 100px rgba(210, 92, 106, 0.5); } }
   
     /* =========================================
        2. UI : TOOLBAR & BOUTONS
@@ -44,7 +48,6 @@
         transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
-    /* Mode Cinématique : on cache l'UI en jeu */
     body.playing #toolbar { transform: translateY(-100%); }
     body.playing .floating-panel { opacity: 0; pointer-events: none; }
     
@@ -76,7 +79,7 @@
     select option { background: #1e1e2e; color: #bac2de; }
 
     /* =========================================
-       3. HUD EN JEU (STATS, BARRES)
+       3. HUD EN JEU (STATS, VIES)
        ========================================= */
     #stats { 
         position: fixed; top: 10px; right: 20px; background: rgba(17,17,27,0.9); padding: 8px 20px; 
@@ -84,37 +87,18 @@
         gap: 15px; font-size: 14px; font-weight: bold; align-items: center; color: #bac2de; 
         box-shadow: 0 4px 15px rgba(0,0,0,0.8);
     }
+    #lives-display { position: fixed; top: 15px; left: 20px; font-size: 26px; z-index: 5000; display: none; text-shadow: 2px 2px 0 #000; letter-spacing: 5px; }
     #countdown { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; color: var(--wow-yellow); z-index: 9999; display: none; text-shadow: 0 0 30px rgba(255,209,0,0.5), 4px 4px 0 #000; font-weight: bold; font-family: monospace;}
-    #resource-bar-wrapper { position: absolute; bottom: 25%; left: 50%; transform: translateX(-50%); width: 250px; height: 14px; background: #11111b; border: 1px solid var(--elvui-border); display: none; z-index: 500; pointer-events: none; box-shadow: 0 2px 5px rgba(0,0,0,0.8); }
-    #resource-bar-fill { height: 100%; width: 0%; background: #f38ba8; transition: width 0.1s ease-out; }
-    #resource-bar-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; font-size: 10px; color: #fdfdfd; font-weight: bold; line-height: 14px; text-shadow: 1px 1px 0 #000; }
-    #global-castbar-wrapper { position: absolute; top: 30%; left: 50%; transform: translateX(-50%); width: 300px; display: none; flex-direction: column; gap: 2px; z-index: 500; pointer-events: none; }
-    #global-castbar-bg { width: 100%; height: 18px; background: #11111b; border: 1px solid var(--elvui-border); position: relative; }
-    #global-castbar-fill { height: 100%; width: 0%; background: var(--elvui-castbar); }
-    #global-castbar-text { position: absolute; top: 0; left: 5px; font-size: 11px; color: #11111b; font-weight: bold; line-height: 18px; }
-
-    /* --- GESTION DES MODES NORMAL / TRYHARD --- */
-    .switch-group { display: flex; background: #1e1e2e; border: 1px solid var(--elvui-border); border-radius: 4px; overflow: hidden; }
-    .switch-btn { padding: 4px 12px; font-weight: bold; border: none; background: transparent; border-radius: 0; }
-    
-    body[data-training="NORMAL"] .tryhard-only { display: none !important; }
-    body[data-training="NORMAL"] .spell-info-badge { display: none !important; }
-    body[data-training="NORMAL"] .stack-counter { display: none !important; }
-    body[data-training="NORMAL"] .box { border-color: var(--elvui-border) !important; box-shadow: none !important; animation: none !important; }
-    body[data-training="NORMAL"] .box.selected { border-color: #89b4fa !important; box-shadow: inset 0 0 10px rgba(137,180,250,0.5) !important; }
-    body[data-training="NORMAL"] .box.active-target { border-color: var(--elvui-active-target) !important; box-shadow: 0 0 15px var(--elvui-active-target) !important; }
 
     /* =========================================
-       4. WORKSPACE, MOTEUR ABSOLU & GRILLE
+       4. WORKSPACE & GRILLE
        ========================================= */
     #workspace { 
         position: relative; width: 100vw; height: calc(100vh - 42px); 
         background-color: #0c0c0e; overflow: hidden; cursor: crosshair; 
     }
     #workspace.panning { cursor: grabbing !important; }
-    #workspace.show-drag-grid {
-        background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-    }
+    #workspace.show-drag-grid { background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); }
     #board { position: absolute; top: 0; left: 0; width: 0; height: 0; transform-origin: 0 0; }
     #ghost-container { position: absolute; top: 0; left: 0; width: 0; height: 0; z-index: 10;}
     #selection-lasso { position: absolute; border: 1px solid rgba(137, 180, 250, 0.8); background: rgba(137, 180, 250, 0.2); display: none; z-index: 500; pointer-events: none; }
@@ -130,12 +114,11 @@
         max-height: calc(100vh - 100px); overflow-y: auto;
     }
     #settings-panel { right: 20px; width: 350px; }
-    #logs-panel { right: 380px; width: 500px; }
-    #spell-modal { position: absolute; background: #1e1e2e; border: 1px solid var(--elvui-spell-mode); padding: 15px; z-index: 2500; display: none; flex-direction: column; gap: 8px; width: 250px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); max-height: calc(100vh - 100px); overflow-y: auto; }
-    #grimoire-panel { left: 20px; width: 260px; }
+    #logs-panel { right: 380px; width: 520px; }
     
-    .panel-title { color: #89b4fa; font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 5px; border-bottom: 1px solid #313244; padding-bottom: 5px; }
-    .panel-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #bac2de; }
+    .panel-title { color: #89b4fa; font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 5px; border-bottom: 1px solid #313244; padding-bottom: 5px; cursor: grab; user-select: none; }
+    .panel-title:active { cursor: grabbing; }
+    .panel-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #bac2de; margin-bottom: 3px;}
     .panel-row input[type="number"], .panel-row input[type="text"] { width: 70px; background: #11111b; border: 1px solid #45475a; color: #a6e3a1; padding: 4px; text-align: center; font-weight: bold; border-radius: 2px;}
     
     .presets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
@@ -147,9 +130,9 @@
     .log-table td { padding: 6px; border-bottom: 1px solid #313244; }
 
     /* =========================================
-       6. LES CASES (BOXES) & GRIMOIRE
+       6. LES CASES (BOXES)
        ========================================= */
-    .box { position: absolute; width: var(--box-size); height: var(--box-size); border: 1px solid var(--elvui-border); display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--elvui-case-bg); cursor: pointer; box-sizing: border-box; background-size: cover; background-position: center; transition: transform 0.05s, border-color 0.1s; }
+    .box { position: absolute; width: var(--box-size); height: var(--box-size); border: 1px solid var(--elvui-border); display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--elvui-case-bg); cursor: pointer; box-sizing: border-box; transition: transform 0.05s, border-color 0.1s, background-color 0.3s; }
     .box-content { display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: none; width: 95%; z-index: 2; text-shadow: 1px 1px 2px #000; }
     .box-mod { color: #a6adc8; font-size: calc(var(--box-size) * 0.18); line-height: 1; }
     .box-key { color: var(--elvui-case-txt); font-size: calc(var(--box-size) * 0.40); font-weight: bold; line-height: 1; }
@@ -159,23 +142,10 @@
     .ghost-box { position: absolute; width: var(--box-size); height: var(--box-size); border: 2px dashed rgba(137, 180, 250, 0.5); background: rgba(137, 180, 250, 0.2); pointer-events: none; z-index: 40; display: none;}
     .drag-invalid { border-color: var(--elvui-error) !important; background: rgba(210, 92, 106, 0.4) !important; }
     .box.listening { border-color: var(--elvui-bind-mode) !important; box-shadow: 0 0 15px var(--elvui-bind-mode) !important; z-index: 150;}
+    .box.quick-binding { border-color: var(--wow-yellow) !important; box-shadow: 0 0 20px var(--wow-yellow) !important; z-index: 200; }
 
-    /* TRYHARD OVERLAYS (CD, GCD, Stacks) */
-    .spell-info-badge { position: absolute; top: 1px; left: 1px; right: 1px; display: flex; pointer-events: none; z-index: 5; }
-    .si-prio { color: var(--elvui-spell-mode); font-size: calc(var(--box-size) * 0.22); font-weight: bold; background: rgba(0,0,0,0.6); padding: 0 2px; border-radius: 2px; }
-    .stack-counter { position: absolute; bottom: 1px; right: 2px; font-size: calc(var(--box-size) * 0.35); font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; z-index: 25; pointer-events: none; }
-    .box-cd-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.75); z-index: 20; display: flex; justify-content: center; align-items: center; pointer-events: none;}
-    .box-cd-text { color: #f9e2af; font-size: calc(var(--box-size) * 0.35); font-weight: bold; }
-    .box-gcd-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 15; pointer-events: none; transform-origin: bottom; animation: gcdSweep linear forwards; }
-    @keyframes gcdSweep { 0% { transform: scaleY(1); } 100% { transform: scaleY(0); } }
-    .box.glowing { border-color: #f9e2af !important; box-shadow: 0 0 10px #f9e2af, inset 0 0 10px #f9e2af; z-index: 15; animation: pulse 1s infinite alternate; }
-    @keyframes pulse { 0% { filter: brightness(1); } 100% { filter: brightness(1.4); } }
-    .box.drag-over { border-color: var(--elvui-spell-mode) !important; box-shadow: inset 0 0 15px var(--elvui-spell-mode) !important; }
-
-    /* GRIMOIRE ITEMS */
-    .spell-item { background: #313244; border: 1px solid #45475a; padding: 5px; margin-bottom: 5px; cursor: grab; display: flex; align-items: center; gap: 8px; font-size: 12px; border-radius: 2px;}
-    .spell-item:active { cursor: grabbing; }
-    .spell-icon-preview { width: 24px; height: 24px; background: #11111b; border: 1px solid #000; background-size: cover; background-position: center; }
+    /* Séquences Badges */
+    .sequence-badge { position: absolute; top: -8px; right: -8px; background: var(--wow-yellow); color: #000; border-radius: 50%; width: 22px; height: 22px; font-weight: bold; font-size: 14px; display: flex; justify-content: center; align-items: center; z-index: 200; box-shadow: 0 0 5px #000; border: 1px solid #11111b;}
 
     /* =========================================
        7. FCT (TEXTE DE COMBAT) & GAME FEEL
@@ -232,8 +202,9 @@
     #welcome-modal h1, #feedback-modal h1 { color: var(--wow-yellow); margin-top: 0; font-size: 22px; text-shadow: 1px 1px 0 #000;}
     #feedback-modal textarea { width: 100%; height: 100px; background: #11111b; color: #a6e3a1; border: 1px solid #45475a; padding: 10px; margin: 15px 0; border-radius: 4px; resize: none; font-family: inherit; box-sizing: border-box;}
     
-    #score-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e1e2e; border: 2px solid #89b4fa; padding: 25px; z-index: 9999; text-align: center; border-radius: 8px; color: #bac2de; display: none; min-width: 250px; box-shadow: 0 0 40px rgba(0,0,0,0.9); }
+    #score-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e1e2e; border: 2px solid #89b4fa; padding: 25px; z-index: 9999; text-align: center; border-radius: 8px; color: #bac2de; display: none; min-width: 350px; box-shadow: 0 0 40px rgba(0,0,0,0.9); }
     .score-acc { font-size: 32px; font-weight: bold; margin: 15px 0; color: #a6e3a1; text-shadow: 1px 1px 0 #000; }
+    #worst-keys { margin-top: 15px; font-size: 12px; background: #11111b; padding: 10px; border-radius: 4px; text-align: left; border: 1px solid #45475a;}
 
     /* TUTORIEL SPOTLIGHT */
     #spotlight-hole { position: fixed; border-radius: 4px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.85); pointer-events: none; z-index: 9998; display: none; border: 2px solid var(--wow-yellow); transition: all 0.3s ease; }
@@ -243,13 +214,10 @@
     .tut-dot.active { background: var(--wow-yellow); box-shadow: 0 0 5px var(--wow-yellow); }
     .btn-tut { background: var(--wow-yellow); color: #11111b; border: none; padding: 6px 14px; font-weight: bold; cursor: pointer; border-radius: 2px; }
 
-    /* Tuto Fix : Forcer la visibilité des options cachées pour le calcul du Spotlight */
-    body.tut-options-active #tut-target-simu { display: block !important; }
-    body.tut-options-active #tut-target-simu .panel-row { display: flex !important; }
-    body.tut-options-active #tut-target-simu .panel-title { display: block !important; }
+    body.tut-options-active #tut-target-arcade { display: block !important; }
 </style>
 </head>
-<body data-training="NORMAL">
+<body>
 
   <div id="welcome-modal">
       <h1>Bienvenue sur l'Entraîneur !</h1>
@@ -257,8 +225,8 @@
       
       <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 4px; border-left: 3px solid #89b4fa; font-size: 12px; text-align: left; margin-bottom: 20px; line-height: 1.5;">
           🔒 <b>Confidentialité & Sauvegardes</b><br>
-          Ce projet est hébergé sur GitHub Pages et fonctionne 100% en local. <b>Aucune donnée n'est collectée.</b> Vos profils et vos historiques sont enregistrés directement dans votre navigateur (localStorage). <br><br>
-          ⚠️ <i>Pensez à utiliser le bouton "Exporter" et à conserver votre code de profil en lieu sûr (Discord privé, Bloc-notes, Drive) pour ne rien perdre si vous videz votre cache !</i>
+          Ce projet est hébergé sur GitHub Pages et fonctionne 100% en local. <b>Aucune donnée n'est collectée.</b> Vos profils et historiques sont enregistrés directement dans votre navigateur. <br><br>
+          ⚠️ <i>Pensez à utiliser le bouton "Exporter" et à conserver votre code de profil en lieu sûr (Discord privé, Bloc-notes) pour ne rien perdre si vous videz votre cache !</i>
       </div>
 
       <div style="font-size: 12px; color: #a6adc8; border-top: 1px solid #45475a; padding-top: 15px; margin-bottom: 20px; line-height: 1.8;">
@@ -298,28 +266,44 @@
   <div id="trash-zone">🗑️ Glisser ici pour supprimer</div>
   <div id="countdown">3</div>
 
+  <div id="lives-display">❤️❤️❤️</div>
+
   <div id="score-modal">
       <h2 style="color:#89b4fa; margin-top:0;">Session Terminée !</h2>
       <div class="score-acc" id="sm-acc">100%</div>
-      <div style="font-size:14px; line-height:1.8; margin-bottom:20px;">
+      <div style="font-size:14px; line-height:1.8; margin-bottom:10px;">
+          Score : <b id="sm-score" style="color:#cba6f7;">0</b><br>
           APM : <b id="sm-apm" style="color:#89b4fa;">0</b><br>
           Réaction moy. : <b id="sm-react" style="color:#f9e2af;">0 ms</b><br>
           Max Combo : <b id="sm-combo" style="color:#cba6f7;">0</b><br>
           Touches : <b id="sm-hits" style="color:#a6e3a1;">0</b> / Fautes : <b id="sm-misses" style="color:var(--elvui-error);">0</b>
       </div>
-      <button style="width:100%; background: #89b4fa; color: #11111b; font-weight: bold; border:none; padding:8px;" onclick="closeScore()">Continuer</button>
+      
+      <div id="worst-keys"></div>
+
+      <div style="display:flex; gap:10px; margin-top:15px;">
+          <button style="flex:1; background: var(--discord-color); color: #fff; font-weight: bold; border:none; padding:10px; border-radius: 4px;" onclick="shareToDiscord()">Partager (Discord)</button>
+          <button style="flex:1; background: #89b4fa; color: #11111b; font-weight: bold; border:none; padding:10px; border-radius: 4px;" onclick="closeScore()">Continuer</button>
+      </div>
   </div>
 
   <div id="stats">
       <span id="timerVal" style="color:#cba6f7; display:none; margin-right:8px;">0s</span> 
+      Score: <span id="scoreVal" style="color: #cba6f7;">0</span> | 
       Réussites: <span id="hitsVal" style="color: #33d17a;">0</span> | Fautes: <span id="missesVal" style="color: var(--elvui-error);">0</span> | <span id="reactVal" style="color: #f9e2af;">- ms</span> | APM: <span id="apmVal" style="color: #89b4fa;">0</span>
   </div>
 
   <div id="toolbar">
     <button class="btn-info" onclick="triggerInfoTutorial()">i</button>
-    <div id="tut-target-build"><button onclick="addBox()" class="action-btn">+ Case</button></div>
+    <div id="tut-target-build" style="display:flex; gap:8px;">
+        <button onclick="addBox()" class="action-btn">+ Case</button>
+        <button onclick="startQuickBind()" id="btnQuickBind" class="action-btn" style="color: var(--wow-yellow);" title="Sélectionnez des cases et tapez vos raccourcis à la chaîne">⚡ Saisie Rapide</button>
+    </div>
     <div class="separator"></div>
-    <div id="tut-target-liaison"><button onclick="groupSelected()" class="action-btn" title="Sélectionnez plusieurs cases au lasso pour les lier">🔗 Lier</button><button onclick="ungroupSelected()" class="action-btn">🔓 Délier</button></div>
+    <div id="tut-target-liaison">
+        <button onclick="groupSelected()" class="action-btn" title="Sélectionnez plusieurs cases au lasso pour les lier">🔗 Lier</button>
+        <button onclick="ungroupSelected()" class="action-btn">🔓 Délier</button>
+    </div>
     <div class="separator"></div>
     
     <div id="tut-target-taille-aimant" style="display:flex; gap:8px;">
@@ -328,9 +312,7 @@
     </div>
     
     <div class="separator"></div>
-    <div id="tut-target-mode" class="switch-group"><button id="btnModeNormal" class="switch-btn" onclick="setTrainingMode('NORMAL')">Normal</button><button id="btnModeTryhard" class="switch-btn" onclick="setTrainingMode('TRYHARD')">Tryhard</button></div>
-    <button onclick="toggleHeatmap()" id="btnHeatmap" class="action-btn tryhard-only" style="color: var(--elvui-error); margin-left: 8px;">🔥 Heatmap</button>
-    <button onclick="toggleGrimoire()" id="btnGrimoire" class="action-btn tryhard-only" style="color: var(--elvui-spell-mode);">📖 Grimoire</button>
+    <button onclick="toggleHeatmap()" id="btnHeatmap" class="action-btn" style="color: var(--elvui-error); margin-left: 8px;">🔥 Heatmap</button>
     <div class="separator"></div>
     <div id="tut-target-fin" style="display:flex; gap:8px; margin-left:auto;">
         <button onclick="toggleLogsPanel()" class="action-btn">📊 Logs</button>
@@ -361,17 +343,12 @@
     <div class="panel-row"><label>Sauver Logs</label><input type="checkbox" id="cfgSaveLogs" checked onchange="saveTrainingConfig()"></div>
     
     <div id="tut-target-arcade">
-        <div class="panel-title" style="margin-top:10px">Options Arcade</div>
+        <div class="panel-title" style="margin-top:10px">Options d'Entraînement</div>
         <div class="panel-row"><label>Sprint ⏱️</label><select id="cfgSprint" class="select-input" style="border:1px solid #45475a;" onchange="saveTrainingConfig()"><option value="0">Infini</option><option value="30">30s</option><option value="60">1 min</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option><option value="600">10 min</option></select></div>
+        <div class="panel-row"><label>Séquence (Mode Piano)</label><input type="number" id="cfgSequence" value="1" min="1" max="4" onchange="saveTrainingConfig()"></div>
+        <div class="panel-row"><label style="color:var(--elvui-error);">Mode Survie ❤️ (3 Vies)</label><input type="checkbox" id="cfgSurvival" onchange="saveTrainingConfig()"></div>
         <div class="panel-row"><label>Anneau de rythme ⭕</label><input type="checkbox" id="cfgRhythm" onchange="saveTrainingConfig()"></div>
         <div class="panel-row" title="Cache vos barres, affiche les touches au centre"><label style="color:var(--elvui-error);">Mode Aveugle 🙈</label><input type="checkbox" id="cfgBlind" onchange="saveTrainingConfig()"></div>
-    </div>
-    
-    <div id="tut-target-simu" class="tryhard-only">
-        <div class="panel-title" style="margin-top:10px">Simulateur (Tryhard)</div>
-        <div class="panel-row" style="background: rgba(250, 179, 135, 0.1); padding: 5px; border: 1px solid var(--elvui-spell-mode);"><label>Activer Rotation</label><input type="checkbox" id="cfgRotation" onchange="saveTrainingConfig()"></div>
-        <div class="panel-row"><label>GCD (ms)</label><input type="number" id="cfgGcd" value="1500" onchange="saveTrainingConfig()"></div>
-        <div class="panel-row"><label>Max Ressource</label><input type="number" id="cfgMaxResource" value="100" onchange="saveTrainingConfig()"></div>
     </div>
 
     <div id="tut-target-speed">
@@ -388,61 +365,31 @@
         <button class="preset-btn" onclick="setDifficulty(500, 5, 1000, this)">Burst (~100 APM)</button>
         <button class="preset-btn" style="grid-column: span 2;" onclick="setDifficulty(300, 0, 800, this)">Glad (~130+ APM)</button>
     </div>
-    <button onclick="resetWholeInterface()" style="margin-top:15px; background:var(--elvui-error); color:#11111b; font-weight:bold; padding:8px; border:none;">🧨 Reset Layout (Conserve touches)</button>
+    <button id="tut-target-reset" onclick="resetWholeInterface()" style="margin-top:15px; background:var(--elvui-error); color:#11111b; font-weight:bold; padding:8px; border:none;">🧨 Reset Layout (Conserve touches)</button>
     <button onclick="toggleSettingsPanel()" style="margin-top:5px; padding:8px; border:none;">Fermer</button>
   </div>
 
   <div id="logs-panel" class="floating-panel">
-    <div class="panel-title">Historique Global <span id="log-mode-label" style="color:#a6e3a1;"></span></div>
+    <div class="panel-title">Historique Global</div>
     <div id="log-summary" style="font-size:11px; text-align:center; margin-bottom:10px; background:#313244; padding:5px; border-radius:2px;">
         Sessions: <span id="log-total-sessions" style="color:#f9e2af; font-weight:bold;">0</span> | 
         Précision: <span id="log-avg-acc" style="color:#a6e3a1; font-weight:bold;">0%</span> | 
         APM: <span id="log-avg-apm" style="color:#89b4fa; font-weight:bold;">0</span>
     </div>
-    <table class="log-table"><thead><tr><th>Date</th><th>Profil</th><th>Tch</th><th>Err</th><th>Acc</th><th>APM</th><th>🗑️</th></tr></thead><tbody id="logs-tbody"></tbody></table>
-  </div>
-
-  <div id="grimoire-panel" class="floating-panel tryhard-only">
-      <div class="panel-title">📖 Grimoire (Drag & Drop)</div>
-      <div class="spell-item" draggable="true" ondragstart="event.dataTransfer.setData('text/plain', 'ERASER')" style="background:#451a23; border-color:var(--elvui-error); color:var(--elvui-error); font-weight:bold; justify-content:center">🧽 Gomme / Vider Case</div>
-      <div id="spell-list" style="display:flex; flex-direction:column; gap:5px; margin-bottom:10px;"></div>
-      <button onclick="createGrimoireSpell()" style="background:var(--elvui-spell-mode); color:#11111b; font-weight:bold; border:none; padding:6px; width:100%">+ Nouveau Sort</button>
-      <button onclick="toggleGrimoire()" style="margin-top: 5px; border:none; padding:6px;">Fermer</button>
-  </div>
-
-  <div id="spell-modal" class="floating-panel tryhard-only">
-    <div class="panel-title" style="color:var(--elvui-spell-mode)">Propriétés Sort</div>
-    <div class="panel-row"><label>Nom</label><input type="text" id="spell-name"></div>
-    <div class="panel-row"><label>Couleur</label><input type="text" id="spell-color" placeholder="#ff0000"></div>
-    <div class="panel-row"><label>Icône URL</label><input type="text" id="spell-icon"></div>
-    <div class="panel-row" title="1 = Priorité max. 0 = Filler sans prio"><label>Prio (1=Max)</label><input type="number" id="spell-priority"></div>
-    <div class="panel-row"><label>Cast (ms)</label><input type="number" id="spell-cast"></div>
-    <div class="panel-row"><label>CD (ms)</label><input type="number" id="spell-cd"></div>
-    <div class="panel-row" title="Positif = Génère. Négatif = Coûte."><label>Ressource</label><input type="number" id="spell-resource" placeholder="+10 ou -30"></div>
-    <div class="panel-row"><label>Charges</label><input type="number" id="spell-charges" value="1" min="1"></div>
-    <div class="panel-row"><label>% Proc</label><input type="number" id="spell-proc" min="0" max="100"></div>
-    <div class="panel-row"><label>Off-GCD ?</label><input type="checkbox" id="spell-offgcd"></div>
-    <div class="panel-row"><label>Interrupt ?</label><input type="checkbox" id="spell-interrupt"></div>
-    <div style="display: flex; gap: 5px; margin-top: 10px;">
-        <button onclick="saveSpellProperties()" style="flex:1; background:var(--elvui-spell-mode); color:#11111b; font-weight:bold; border:none; padding:6px;">Appliquer</button>
-        <button onclick="closeSpellModal()" style="flex:1; background:#45475a; font-weight:bold; color:#bac2de; border:none; padding:6px;">Fermer</button>
-    </div>
+    <table class="log-table"><thead><tr><th>Date</th><th>Profil</th><th>Tch</th><th>Err</th><th>Acc</th><th>APM / Score</th><th>🗑️</th></tr></thead><tbody id="logs-tbody"></tbody></table>
   </div>
 
   <div id="workspace">
     <div id="combo-counter">0 Combo</div>
     <div id="blind-prompt"></div>
-    <div id="resource-bar-wrapper" class="tryhard-only"><div id="resource-bar-fill"></div><div id="resource-bar-text">0 / 100</div></div>
-    <div id="global-castbar-wrapper" class="tryhard-only"><div id="global-castbar-bg"><div id="global-castbar-fill"></div><div id="global-castbar-text">Cast...</div></div></div>
-    
     <div id="board"><div id="ghost-container"></div></div>
     <div id="selection-lasso"></div>
   </div>
 
-  <div id="instructions"><span id="inst-text">💡 <b>OUTILS</b> : 🖱️ Clic/Lasso = Sélection. <b>Clic Droit + Glisser</b> = Caméra. <b>Double-Clic</b> = Assigner Raccourci/Sort. Glisser en bas = 🗑️ Supprimer.</span></div>
+  <div id="instructions"><span id="inst-text">💡 <b>OUTILS</b> : 🖱️ Clic/Lasso = Sélection. <b>Clic Droit + Glisser</b> = Caméra. <b>Double-Clic</b> = Assigner Raccourci. Glisser en bas = 🗑️ Supprimer.</span></div>
   
   <div id="tut-target-commu">
-      <div id="bug-report" onclick="el('feedback-modal').style.display='block'; el('settings-panel').style.display='none'; el('logs-panel').style.display='none'; closeSpellModal();">
+      <div id="bug-report" onclick="el('feedback-modal').style.display='block'; el('settings-panel').style.display='none'; el('logs-panel').style.display='none';">
           🐛 <b>Report Bug</b><br>
           <i>& Suggestions</i>
       </div>
@@ -470,24 +417,25 @@
       if (!el('cfgSound').checked) return; 
       initAudio(); const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); let dest = audioCtx.destination;
       
-      // Spatialisation 3D du son en fonction de la position de la case !
       if(globalPanner && boxId) {
           let d = getBoxData(boxId);
           if(d) {
               let screenX = d.px + panX + parseInt(getComputedStyle(document.documentElement).getPropertyValue('--box-size'))/2;
-              let panVal = (screenX / window.innerWidth) * 2 - 1; // -1 = Gauche, 1 = Droite
+              let panVal = (screenX / window.innerWidth) * 2 - 1; 
               globalPanner.pan.value = Math.max(-1, Math.min(1, panVal));
               dest = globalPanner;
           }
       }
       
+      let pitchMult = document.body.classList.contains('bloodlust') ? 1.15 : 1;
+      
       osc.connect(gain); gain.connect(dest);
       if (type === 'hit') { 
-          osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); 
+          osc.type = 'sine'; osc.frequency.setValueAtTime(880 * pitchMult, audioCtx.currentTime); 
           gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1); 
           osc.start(); osc.stop(audioCtx.currentTime + 0.1); 
       } else { 
-          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); 
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150 * pitchMult, audioCtx.currentTime); 
           gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2); 
           osc.start(); osc.stop(audioCtx.currentTime + 0.2); 
       }
@@ -496,7 +444,7 @@
   function playMilestoneSound(combo) {
       if (!el('cfgSound').checked) return; initAudio(); 
       const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); 
-      if(globalPanner) globalPanner.pan.value = 0; // Centre le son pour la récompense de combo
+      if(globalPanner) globalPanner.pan.value = 0; 
       osc.connect(gain); gain.connect(globalPanner || audioCtx.destination);
       let freq = 440 * Math.pow(1.05, combo/10); 
       osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + 0.4);
@@ -520,7 +468,6 @@
       clearTimeout(toastTimeout); toastTimeout = setTimeout(() => t.style.opacity = 0, 1500);
   }
 
-  // GITHUB BRIDGE (Retours et Bugs)
   function sendFeedback() {
       const type = el('fb-type').value; const text = el('fb-text').value; if(!text.trim()) return alert("Le message est vide.");
       const repoUrl = "https://github.com/Kiipey/-wow-trainer/issues/new";
@@ -532,116 +479,82 @@
   // ==========================================
   // --- 2. ETAT GLOBAL & PRESETS ---
   // ==========================================
-  let appState = { trainingMode: 'NORMAL', profiles: {}, currentProfile: 'Défaut', grimoire: [] };
+  let appState = { profiles: {}, currentProfile: 'Défaut' };
   let boxesData = []; let boxStats = {}; let customScenarios = [];
-  let boxCounter = 1, groupCounter = 1, isPlayMode = false, listeningBoxId = null, editingSpellBoxId = null, hoveredBoxId = null, showHeatmap = false;
+  let boxCounter = 1, groupCounter = 1, isPlayMode = false, listeningBoxId = null, hoveredBoxId = null, showHeatmap = false;
   let panX = 0, panY = 0, isPanning = false, panStartX = 0, panStartY = 0;
   let isDraggingBox = false, isLassoing = false, dragGroupInfo = [], startX = 0, startY = 0;
-  let activeTargetId = null, startTime = 0, playSessionStart = 0, hits = 0, misses = 0, totalReactTime = 0;
+  let startTime = 0, playSessionStart = 0, hits = 0, misses = 0, totalReactTime = 0, score = 0;
   let currentDelay = 1000, spawnTimeoutId, failTimeoutId, countdownTimerId = null;
-  let isProcessingInput = false, inputDebounceTimer = null, currentResource = 0, currentCombo = 0, maxCombo = 0, sprintTimerId = null;
-  let isPlayerCasting = false, isGlobalCooldown = false, currentCastInterruptible = false, castFinishTimeoutId = null;
+  let isProcessingInput = false, inputDebounceTimer = null, currentCombo = 0, maxCombo = 0, sprintTimerId = null;
+  
+  let sessionKeys = new Set();
+  let sessionStats = {}; 
+  let currentLives = 3;
+  let activeTargets = []; 
+  
+  let isQuickBinding = false;
+  let quickBindQueue = [];
+  let dragPanel = null, dpOffsetX = 0, dpOffsetY = 0;
 
-  // ARRAY DU PROFIL KIIPEY 
   const PRESET_KIIPEY_DATA = [
-      {id:"box-43",px:798,py:1554,bind:"&",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-44",px:840,py:1554,bind:"É",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-45",px:924,py:1554,bind:"\"",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-46",px:966,py:1554,bind:"'",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-47",px:1008,py:1554,bind:"(",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-48",px:840,py:1638,bind:"4",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-49",px:882,py:1638,bind:"5",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-50",px:924,py:1638,bind:"6",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-51",px:966,py:1638,bind:"7",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-52",px:1008,py:1638,bind:"8",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-53",px:798,py:1596,bind:"CTRL+&",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-54",px:840,py:1596,bind:"CTRL+É",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-55",px:924,py:1596,bind:"CTRL+\"",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-56",px:966,py:1596,bind:"CTRL+'",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-57",px:1008,py:1596,bind:"CTRL+(",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-58",px:840,py:1680,bind:"CTRL+4",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-59",px:882,py:1680,bind:"CTRL+5",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-60",px:924,py:1680,bind:"CTRL+6",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-61",px:966,py:1680,bind:"CTRL+7",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-62",px:1008,py:1680,bind:"9",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-63",px:714,py:1638,bind:"1",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-64",px:756,py:1638,bind:"2",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-65",px:798,py:1638,bind:"3",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-66",px:714,py:1680,bind:"CTRL+1",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-67",px:756,py:1680,bind:"CTRL+2",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-68",px:798,py:1680,bind:"CTRL+3",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-69",px:882,py:1554,bind:"Z",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false},
-      {id:"box-70",px:882,py:1596,bind:"S",group:"bar4",prio:0,cast:0,cd:0,intr:'false',name:"",color:"",icon:"",offGcd:'false',proc:0,maxCharges:1,currentCharges:1,resource:0,currentCd:0,isGlowing:false}
+      {id:"box-43",px:798,py:1554,bind:"&",group:"bar4"}, {id:"box-44",px:840,py:1554,bind:"É",group:"bar4"},
+      {id:"box-45",px:924,py:1554,bind:"\"",group:"bar4"}, {id:"box-46",px:966,py:1554,bind:"'",group:"bar4"},
+      {id:"box-47",px:1008,py:1554,bind:"(",group:"bar4"}, {id:"box-48",px:840,py:1638,bind:"4",group:"bar4"},
+      {id:"box-49",px:882,py:1638,bind:"5",group:"bar4"}, {id:"box-50",px:924,py:1638,bind:"6",group:"bar4"},
+      {id:"box-51",px:966,py:1638,bind:"7",group:"bar4"}, {id:"box-52",px:1008,py:1638,bind:"8",group:"bar4"},
+      {id:"box-53",px:798,py:1596,bind:"CTRL+&",group:"bar4"}, {id:"box-54",px:840,py:1596,bind:"CTRL+É",group:"bar4"},
+      {id:"box-55",px:924,py:1596,bind:"CTRL+\"",group:"bar4"}, {id:"box-56",px:966,py:1596,bind:"CTRL+'",group:"bar4"},
+      {id:"box-57",px:1008,py:1596,bind:"CTRL+(",group:"bar4"}, {id:"box-58",px:840,py:1680,bind:"CTRL+4",group:"bar4"},
+      {id:"box-59",px:882,py:1680,bind:"CTRL+5",group:"bar4"}, {id:"box-60",px:924,py:1680,bind:"CTRL+6",group:"bar4"},
+      {id:"box-61",px:966,py:1680,bind:"CTRL+7",group:"bar4"}, {id:"box-62",px:1008,py:1680,bind:"9",group:"bar4"},
+      {id:"box-63",px:714,py:1638,bind:"1",group:"bar4"}, {id:"box-64",px:756,py:1638,bind:"2",group:"bar4"},
+      {id:"box-65",px:798,py:1638,bind:"3",group:"bar4"}, {id:"box-66",px:714,py:1680,bind:"CTRL+1",group:"bar4"},
+      {id:"box-67",px:756,py:1680,bind:"CTRL+2",group:"bar4"}, {id:"box-68",px:798,py:1680,bind:"CTRL+3",group:"bar4"},
+      {id:"box-69",px:882,py:1554,bind:"Z",group:"bar4"}, {id:"box-70",px:882,py:1596,bind:"S",group:"bar4"}
   ];
 
   function loadCommunityPreset(type) {
       let pName = type === 'Kiipey' ? 'Profil Kiipey' : 'Standard MMO';
+      if (!appState.profiles[pName]) { appState.profiles[pName] = { boxes: [], logs: [] }; } else { if(!confirm(`Le profil "${pName}" existe déjà. Voulez-vous l'écraser pour le réinitialiser ?`)) return; }
       
-      // Si le profil existe déjà, on demande avant de l'écraser
-      if (!appState.profiles[pName]) {
-          appState.profiles[pName] = { boxes: [], logsNormal: [], logsTryhard: [] };
-      } else {
-          if(!confirm(`Le profil "${pName}" existe déjà. Voulez-vous l'écraser pour le réinitialiser ?`)) return;
-      }
-      
-      let newBoxes = [];
-      let newPanX = 0, newPanY = 0;
-      
+      let newBoxes = []; let newPanX = 0, newPanY = 0;
       if(type === 'Kiipey') {
-          try {
-              newBoxes = JSON.parse(JSON.stringify(PRESET_KIIPEY_DATA));
-              newPanX = 79; 
-              newPanY = -1000.5;
-          } catch(e) { console.error(e); }
+          try { newBoxes = JSON.parse(JSON.stringify(PRESET_KIIPEY_DATA)); newPanX = 79; newPanY = -1000.5; } catch(e) { console.error(e); }
       } else if(type === 'MMO') {
-          const binds = ['1','2','3','4','5','6','7','8','9','0',')','='];
-          const stp = 42; let cId = 100;
-          for(let i=0; i<12; i++) newBoxes.push({ id:'b'+cId++, px:i*stp, py:0, bind:binds[i], group:'mmo1', prio:0, cast:0, cd:0, intr:'false', proc:0, maxCharges:1, currentCharges:1, resource:0});
-          for(let i=0; i<12; i++) newBoxes.push({ id:'b'+cId++, px:i*stp, py:stp, bind:'SHIFT+'+binds[i], group:'mmo2', prio:0, cast:0, cd:0, intr:'false', proc:0, maxCharges:1, currentCharges:1, resource:0});
-          for(let i=0; i<12; i++) newBoxes.push({ id:'b'+cId++, px:i*stp, py:stp*2, bind:'CTRL+'+binds[i], group:'mmo3', prio:0, cast:0, cd:0, intr:'false', proc:0, maxCharges:1, currentCharges:1, resource:0});
+          const binds = ['1','2','3','4','5','6','7','8','9','0',')','=']; const stp = 42; let cId = 100;
+          for(let i=0; i<12; i++) newBoxes.push({ id:'b'+cId++, px:i*stp, py:0, bind:binds[i], group:'mmo1'});
+          for(let i=0; i<12; i++) newBoxes.push({ id:'b'+cId++, px:i*stp, py:stp, bind:'SHIFT+'+binds[i], group:'mmo2'});
+          for(let i=0; i<12; i++) newBoxes.push({ id:'b'+cId++, px:i*stp, py:stp*2, bind:'CTRL+'+binds[i], group:'mmo3'});
           newPanX = (window.innerWidth / 2) - ((12*stp)/2); newPanY = (window.innerHeight / 2) - stp;
       }
-      
-      appState.profiles[pName].boxes = newBoxes;
-      appState.profiles[pName].camX = newPanX;
-      appState.profiles[pName].camY = newPanY;
-      
-      appState.currentProfile = pName;
-      updateProfileDropdown();
-      loadProfile(pName);
-      
-      saveApp(); showToast(`✨ Preset ${type} chargé !`);
+      appState.profiles[pName].boxes = newBoxes; appState.profiles[pName].camX = newPanX; appState.profiles[pName].camY = newPanY;
+      appState.currentProfile = pName; updateProfileDropdown(); loadProfile(pName); saveApp(); showToast(`✨ Preset ${type} chargé !`);
   }
 
-  // --- ANTI DOUBLE-TAP GHOST FAULT ---
   let lastHitBind = null;
   let lastHitTime = 0;
 
   // ==========================================
-  // --- 3. TUTORIEL SEQUENCÉ V52 ---
+  // --- 3. TUTORIEL SEQUENCÉ V55 ---
   // ==========================================
   const tutorials = {
-      NORMAL: [
-          { target: 'tut-target-build', title: "1. L'Édition", text: "Créez vos cases avec <b>+ Case</b>. Déplacez-les librement ou sélectionnez-les au lasso. <br><br>💡 <b>Astuce Pro</b> : Double-cliquez sur une case pour lui assigner un raccourci clavier !" },
-          { target: 'instructions', title: "2. L'Assistant Intégré", text: "Gardez toujours un œil ici ! Cet encart vous indique <b>en temps réel</b> les contrôles et raccourcis disponibles selon vos actions. La solution s'y trouve toujours." },
+      MAIN: [
+          { target: 'tut-target-build', title: "1. L'Édition", text: "Créez vos cases avec <b>+ Case</b>. Déplacez-les librement ou sélectionnez-les au lasso. <br><br>💡 <b>Astuce Pro</b> : Utilisez le bouton <b>⚡ Saisie Rapide</b> après une sélection pour lier vos touches à la chaîne !" },
+          { target: 'instructions', title: "2. L'Assistant Intégré", text: "Gardez toujours un œil ici ! Cet encart vous indique <b>en temps réel</b> les contrôles et raccourcis disponibles selon vos actions." },
           { target: 'tut-target-liaison', title: "3. Les Barres", text: "Sélectionnez un groupe de cases et cliquez sur <b>🔗 Lier</b> pour les déplacer toutes ensemble comme une vraie barre d'actions." },
           { target: 'tut-target-taille-aimant', title: "4. La Grille", text: "Ajustez la taille de vos cases. <br><br>Gérez l'<b>Aimantation</b> pour aligner vos touches parfaitement. Les cases feront apparaître une grille fantôme en les déplaçant !" },
-          { target: 'tut-target-mode', title: "5. La Dualité", text: "Le mode <b>Normal</b> entraîne la vitesse pure et la mémoire spatiale.<br><br>Le mode <b>Tryhard</b> débloquera le simulateur de World of Warcraft." },
+          { target: 'btnHeatmap', title: "5. L'Analytique", text: "Activez la <b>🔥 Heatmap</b> après une session. Vos cases se coloreront du Vert au Rouge pour indiquer vos lacunes exactes." },
           { target: 'tut-target-fin', title: "6. À vous de jouer", text: "Ouvrez les <b>⚙️ Options</b> pour gérer votre vitesse et vos sauvegardes, ou cliquez directement sur <b>▶ Lancer</b> pour démarrer la session !" },
           { target: 'tut-target-commu', title: "7. La Communauté", text: "Un bug bloquant ? Une idée de génie ? Utilisez le bouton de signalement !<br><br>Vous trouverez aussi mes coordonnées juste en dessous pour discuter du projet." }
       ],
-      TRYHARD: [
-          { target: 'btnGrimoire', title: "1. Le Grimoire", text: "Créez vos sorts avec leurs vraies stats (Cast, CD, Ressources).<br>Faites un <b>Glisser-Déposer</b> du Grimoire vers une case." },
-          { target: 'tut-target-build', title: "2. La Logique", text: "Faites un <b>Double-Clic</b> sur une case pour modifier ses propriétés et sa Priorité. L'outil vous proposera intelligemment le sort avec la plus haute priorité disponible au combat." },
-          { target: 'btnHeatmap', title: "3. L'Analytique", text: "Activez la <b>🔥 Heatmap</b> après une session. Vos cases se coloreront du Vert au Rouge pour indiquer vos lacunes exactes." }
-      ],
       OPTIONS: [
-          { target: 'settings-panel', title: "L'Atelier ⚙️", text: "C'est ici que vous allez pouvoir forger votre entraînement sur-mesure." },
+          { target: 'settings-panel', title: "L'Atelier ⚙️", text: "C'est ici que vous allez pouvoir forger votre entraînement sur-mesure. (Astuce : Les fenêtres sont déplaçables !)" },
           { target: 'tut-target-profils', title: "Les Profils 🌟", text: "Sauvegardez vos propres profils ou <b>chargez un profil de la communauté</b> comme le modèle standard MMO ou le layout du créateur de l'outil !" },
-          { target: 'tut-target-arcade', title: "L'Arcade 🕹️", text: "Le <b>Sprint</b> limite la session dans le temps.<br>L'<b>Anneau de rythme</b> vous aide visuellement.<br>Le <b>Mode Aveugle</b> cache vos cases : un vrai test pour votre mémoire (les touches s'affichent au centre) !" },
-          { target: 'tut-target-simu', title: "Le Simulateur ⚔️", text: "Pour les Tryharders : Activez le <b>GCD</b> (Temps de recharge global) et la gestion de votre ressource (Mana, Rage...) pour simuler de vraies conditions de combat." },
+          { target: 'tut-target-arcade', title: "Le Gameplay 🕹️", text: "<b>Sprint</b> : Limite la session dans le temps.<br><b>Séquence</b> : Enchaîne plusieurs touches (Piano).<br><b>Survie</b> : 3 erreurs et c'est la fin !<br><b>Anneau</b> : Un guide visuel de rythme.<br><b>Aveugle</b> : Cache vos cases pour tester votre mémoire !" },
           { target: 'tut-target-speed', title: "Le Rythme ⏱️", text: "Contrôlez la <b>vitesse d'apparition</b> des touches (en millisecondes) et le <b>temps limite</b> dont vous disposez pour réagir." },
-          { target: 'presets-container', title: "Difficultés 🚀", text: "Pas envie de vous embêter avec les chiffres ? Cliquez sur l'une de ces difficultés prédéfinies pour commencer l'entraînement immédiatement !" }
+          { target: 'presets-container', title: "Difficultés 🚀", text: "Pas envie de vous embêter avec les chiffres ? Cliquez sur l'une de ces difficultés prédéfinies pour commencer l'entraînement immédiatement !" },
+          { target: 'tut-target-reset', title: "Le Bouton d'Urgence 🧨", text: "Le layout est un désordre total ? Ce bouton réinitialise la position de toutes les cases sous forme de grille propre. <b>Vos raccourcis assignés sont conservés !</b>" }
       ]
   };
   
@@ -649,25 +562,21 @@
   
   function triggerInfoTutorial() {
       if (el('settings-panel').style.display === 'flex') launchTutorial('OPTIONS', true);
-      else launchTutorial(appState.trainingMode, true);
+      else launchTutorial('MAIN', true);
   }
   
   function launchTutorial(type, force = false) { 
-      if (!force && localStorage.getItem('wow_elvui_tut52_' + type)) return; 
+      if (!force && localStorage.getItem('wow_elvui_tut55_' + type)) return; 
       if (type !== 'OPTIONS') el('settings-panel').style.display = 'none';
-      if (type !== 'TRYHARD' || type === 'NORMAL') if(el('grimoire-panel')) el('grimoire-panel').style.display = 'none';
-      el('logs-panel').style.display = 'none'; closeSpellModal();
+      el('logs-panel').style.display = 'none';
       
-      if (type === 'OPTIONS') {
-          document.body.classList.add('tut-options-active');
-      }
-
+      if (type === 'OPTIONS') { document.body.classList.add('tut-options-active'); }
       activeTutType = type; currentTutStep = 0; el('tut-tooltip').style.display = 'flex'; el('spotlight-hole').style.display = 'block'; renderTutorialStep(); 
   }
 
   function closeWelcomeModal() {
       el('welcome-modal').style.display = 'none';
-      if (!localStorage.getItem('wow_elvui_tut52_' + appState.trainingMode)) { launchTutorial(appState.trainingMode, false); }
+      if (!localStorage.getItem('wow_elvui_tut55_MAIN')) { launchTutorial('MAIN', false); }
   }
   
   function renderTutorialStep() { 
@@ -693,7 +602,7 @@
   function closeTutorial() { 
       el('tut-tooltip').style.display = 'none'; 
       el('spotlight-hole').style.display = 'none'; 
-      localStorage.setItem('wow_elvui_tut52_' + activeTutType, 'true'); 
+      localStorage.setItem('wow_elvui_tut55_' + activeTutType, 'true'); 
       document.body.classList.remove('tut-options-active');
   }
 
@@ -706,23 +615,15 @@
       if (s) { appState = JSON.parse(s); }
       
       if (!appState.profiles || Object.keys(appState.profiles).length === 0) { 
-          appState.profiles = { 'Défaut': { boxes: [], logsNormal: [], logsTryhard: [] } }; 
+          appState.profiles = { 'Défaut': { boxes: [], logs: [] } }; 
           isFirstLaunch = true;
       }
-      if (!appState.grimoire) appState.grimoire = []; 
-      if (!appState.trainingMode) appState.trainingMode = 'NORMAL';
       
       loadProfile(appState.currentProfile);
+      updateProfileDropdown(); loadTrainingConfig(); loadSettings();
       
-      updateProfileDropdown(); loadTrainingConfig(); loadSettings(); renderGrimoire(); 
-      setTrainingMode(appState.trainingMode, true); 
-      
-      if(isFirstLaunch) {
-          generateDefaultLayout();
-          el('welcome-modal').style.display = 'block';
-      } else {
-          launchTutorial(appState.trainingMode, false);
-      }
+      if(isFirstLaunch) { generateDefaultLayout(); el('welcome-modal').style.display = 'block'; } 
+      else { launchTutorial('MAIN', false); }
   }
   
   function saveApp() { 
@@ -734,18 +635,6 @@
       showToast("💾 Profil sauvegardé");
   }
 
-  function setTrainingMode(mode, isInit = false) {
-      if(isPlayMode) return; 
-      appState.trainingMode = mode; document.body.setAttribute('data-training', mode);
-      const bN = el('btnModeNormal'), bT = el('btnModeTryhard');
-      if(mode === 'NORMAL') { bN.style.background = '#a6e3a1'; bN.style.color = '#11111b'; bN.style.fontWeight = 'bold'; bT.style.background = 'transparent'; bT.style.color = '#bac2de'; bT.style.fontWeight = 'normal'; el('log-mode-label').innerText = "(Normal)";} 
-      else { bN.style.background = 'transparent'; bN.style.color = '#bac2de'; bN.style.fontWeight = 'normal'; bT.style.background = 'var(--elvui-error)'; bT.style.color = '#11111b'; bT.style.fontWeight = 'bold'; el('log-mode-label').innerText = "(Tryhard)";}
-      showHeatmap = false; el('btnHeatmap').style.fontWeight = 'normal';
-      
-      if(!isInit) saveApp(); renderLogs(); boxesData.forEach(d => applyBoxVisuals(el(d.id), d)); 
-      if(!isInit) launchTutorial(mode, false);
-  }
-
   // ==========================================
   // --- 5. GESTION DES PROFILS ---
   // ==========================================
@@ -753,7 +642,7 @@
       const sel = el('profile-selector'); sel.innerHTML = ''; 
       Object.keys(appState.profiles).forEach(k => { const opt = document.createElement('option'); opt.value = k; opt.innerText = k; if(k === appState.currentProfile) opt.selected = true; sel.appendChild(opt); }); 
   }
-  function createProfile() { const n = prompt("Nom du nouveau profil :"); if(!n || appState.profiles[n]) return; appState.profiles[n] = { boxes: [], logsNormal: [], logsTryhard: [] }; appState.currentProfile = n; updateProfileDropdown(); loadProfile(n); }
+  function createProfile() { const n = prompt("Nom du nouveau profil :"); if(!n || appState.profiles[n]) return; appState.profiles[n] = { boxes: [], logs: [] }; appState.currentProfile = n; updateProfileDropdown(); loadProfile(n); }
   function renameProfile() {
       if(appState.currentProfile === 'Défaut') return alert("Le profil par défaut ne peut pas être renommé.");
       let n = prompt("Nouveau nom :", appState.currentProfile); if(!n || appState.profiles[n] || n === appState.currentProfile) return;
@@ -775,17 +664,21 @@
       const input = prompt("Colle ton Code Profil ici :"); if (!input) return;
       try {
           let decodedData = input; if (!input.trim().startsWith('[')) { decodedData = decodeURIComponent(atob(input)); } let parsed = JSON.parse(decodedData);
-          let newBoxes = []; let newLogsNorm = []; let newLogsTry = [];
+          let newBoxes = []; let newLogs = [];
           if (Array.isArray(parsed)) { newBoxes = parsed.map(b => ({ ...b, px: parseFloat(b.px), py: parseFloat(b.py) })); } 
-          else if (parsed.layout) { newBoxes = parsed.layout.map(b => ({ ...b, px: parseFloat(b.px), py: parseFloat(b.py) })); newLogsNorm = parsed.logs || []; } 
-          else if (parsed.boxes) { newBoxes = parsed.boxes.map(b => ({ ...b, px: parseFloat(b.px), py: parseFloat(b.py) })); newLogsNorm = parsed.logsNormal || []; newLogsTry = parsed.logsTryhard || []; } 
+          else if (parsed.layout) { newBoxes = parsed.layout.map(b => ({ ...b, px: parseFloat(b.px), py: parseFloat(b.py) })); newLogs = parsed.logs || []; } 
+          else if (parsed.boxes) { newBoxes = parsed.boxes.map(b => ({ ...b, px: parseFloat(b.px), py: parseFloat(b.py) })); newLogs = parsed.logs || parsed.logsNormal || []; } 
           const n = prompt("Nom pour ce profil importé :", "Profil Importé"); if(!n) return;
-          appState.profiles[n] = { boxes: newBoxes, logsNormal: newLogsNorm, logsTryhard: newLogsTry }; appState.currentProfile = n; updateProfileDropdown(); loadProfile(n); saveApp(); showToast("✔️ Profil importé !");
+          appState.profiles[n] = { boxes: newBoxes, logs: newLogs }; appState.currentProfile = n; updateProfileDropdown(); loadProfile(n); saveApp(); showToast("✔️ Profil importé !");
       } catch(e) { alert("❌ Erreur : Format invalide."); }
   }
   function loadProfile(pName) { 
       if(typeof pName === 'string') appState.currentProfile = pName; else if(el('profile-selector')) appState.currentProfile = el('profile-selector').value; 
-      let p = appState.profiles[appState.currentProfile]; boxesData = p.boxes || []; if(!p.logsNormal) p.logsNormal = []; if(!p.logsTryhard) p.logsTryhard = []; boxStats = {}; els('.box').forEach(b => b.remove()); 
+      let p = appState.profiles[appState.currentProfile]; boxesData = p.boxes || []; 
+      if(p.logsNormal || p.logsTryhard) { p.logs = (p.logsNormal || []).concat(p.logsTryhard || []); delete p.logsNormal; delete p.logsTryhard; }
+      if(!p.logs) p.logs = []; 
+      
+      boxStats = {}; els('.box').forEach(b => b.remove()); 
       boxesData.forEach(d => { buildBoxDOM(d); boxStats[d.bind] = {h: 0, m: 0}; }); let maxId = Math.max(0, ...boxesData.map(b => parseInt(b.id.replace('box-','')))); boxCounter = isNaN(maxId) ? 1 : maxId + 1; 
       renderAllBoxes(); if(p.camX !== undefined) { panX = p.camX; panY = p.camY; updateBoardTransform(); } else { centerCamera(); } renderLogs(); 
   }
@@ -798,40 +691,31 @@
   }
 
   // ==========================================
-  // --- 6. MOTEUR ABSOLU V52 (DOM & CASES) ---
+  // --- 6. MOTEUR ABSOLU (DOM & CASES) ---
   // ==========================================
-  function addBoxData(id, px, py, bind, group, prio=0, cast=0, cd=0, intr='false', name="", color="", icon="", offGcd='false', proc=0, charges=1, resource=0) { 
-      const d = { id, px: parseFloat(px), py: parseFloat(py), bind, group, prio, cast, cd, intr, name, color, icon, offGcd, proc, maxCharges: charges, currentCharges: charges, resource, currentCd: 0, isGlowing: false }; 
+  function addBoxData(id, px, py, bind, group) { 
+      const d = { id, px: parseFloat(px), py: parseFloat(py), bind, group }; 
       boxesData.push(d); if(!boxStats[bind]) boxStats[bind] = {h: 0, m: 0}; return d; 
   }
   function getBoxData(id) { return boxesData.find(b => b.id === id); }
   function buildBoxDOM(d) {
       const box = document.createElement('div'); box.className = 'box'; box.id = d.id; if(d.group) box.dataset.group = d.group;
-      box.innerHTML = `<div class="spell-info-badge"><div class="si-prio"></div></div><div class="box-content"><div class="box-mod"></div><div class="box-key"></div></div><div class="stack-counter"></div>`;
+      box.innerHTML = `<div class="box-content"><div class="box-mod"></div><div class="box-key"></div></div>`;
       applyBoxVisuals(box, d);
       
-      box.addEventListener('dragover', e => { if(appState.trainingMode === 'TRYHARD') { e.preventDefault(); box.classList.add('drag-over'); } });
-      box.addEventListener('dragleave', e => box.classList.remove('drag-over'));
-      box.addEventListener('drop', e => { 
-          box.classList.remove('drag-over'); if(appState.trainingMode !== 'TRYHARD') return; 
-          const sid = e.dataTransfer.getData('text/plain'); 
-          if(sid === 'ERASER') { d.name = ''; d.prio = '0'; d.cast = '0'; d.cd = '0'; d.intr = 'false'; d.color = ''; d.icon = ''; d.offGcd = 'false'; d.maxCharges = 1; d.currentCharges = 1; d.proc = '0'; d.resource = 0; applyBoxVisuals(box, d); saveApp(); return; }
-          const spell = appState.grimoire.find(s => s.id == sid); 
-          if(spell) { Object.assign(d, { name: spell.name, color: spell.color, icon: spell.icon, prio: spell.prio, cast: spell.cast, cd: spell.cd, maxCharges: spell.charges, currentCharges: spell.charges, proc: spell.proc, offGcd: spell.offGcd, intr: spell.intr, resource: spell.resource }); applyBoxVisuals(box, d); saveApp(); } 
-      });
       box.addEventListener('mouseenter', () => { hoveredBoxId = box.id; if(!isPlayMode && d.group && !isDraggingBox) els(`.box[data-group="${d.group}"]`).forEach(b => b.classList.add('group-hover')); });
       box.addEventListener('mouseleave', () => { hoveredBoxId = null; els('.box.group-hover').forEach(b => b.classList.remove('group-hover')); });
       
-      // DOUBLE CLIC POUR BIND OU SORTS
       box.addEventListener('dblclick', (e) => {
           if(isPlayMode) return; e.stopPropagation();
-          if(appState.trainingMode === 'NORMAL') { els('.box').forEach(b => b.classList.remove('listening')); box.classList.add('listening'); listeningBoxId = box.id; updateBoxText(box, '...'); } 
-          else { openSpellModal(box, e); }
+          isQuickBinding = false; // Annuler potentiel quick bind en cours
+          els('.box').forEach(b => b.classList.remove('listening', 'quick-binding')); 
+          box.classList.add('listening'); listeningBoxId = box.id; updateBoxText(box, '...');
       });
       
       box.addEventListener('mousedown', (e) => {
-          if(isPlayMode) { if(activeTargetId === box.id) handlePlayInput(formatMouseEvent(e)); return; } e.stopPropagation();
-          if(listeningBoxId) { let m = formatMouseEvent(e); if(m) { d.bind = m; if(!boxStats[m]) boxStats[m] = {h: 0, m: 0}; applyBoxVisuals(box, d); box.classList.remove('listening'); listeningBoxId = null; saveApp(); } return; }
+          if(isPlayMode) { if(activeTargets.length > 0 && activeTargets[0].id === box.id) handlePlayInput(formatMouseEvent(e)); return; } e.stopPropagation();
+          if(listeningBoxId) { let m = formatMouseEvent(e); if(m) { resolveBind(m); } return; }
           if(e.button !== 0) return;
           if(!box.classList.contains('selected')) { els('.box.selected').forEach(b => b.classList.remove('selected')); box.classList.add('selected'); }
           isDraggingBox = true; startX = e.clientX; startY = e.clientY; dragGroupInfo = []; let toMove = new Set();
@@ -844,10 +728,18 @@
   }
 
   function applyBoxVisuals(box, d) {
-      if(!box || !d) return; updateBoxText(box, d.bind); let b = box.querySelector('.spell-info-badge'); b.querySelector('.si-prio').innerText = d.prio > 0 ? `P${d.prio}` : '';
-      box.style.backgroundColor = d.color || ''; box.style.backgroundImage = d.icon ? `url('${d.icon}')` : ''; box.classList.toggle('glowing', d.isGlowing); box.querySelector('.stack-counter').innerText = (d.maxCharges > 1) ? d.currentCharges : '';
-      if(appState.trainingMode === 'NORMAL') { box.style.backgroundColor = ''; box.style.backgroundImage = ''; }
-      if(showHeatmap && appState.trainingMode === 'TRYHARD' && d.bind !== '?') { let s = boxStats[d.bind]; if(s && (s.h + s.m) > 0) { let r = s.h / (s.h + s.m); box.style.backgroundColor = `rgb(${255*(1-r)}, ${255*r}, 0)`; box.style.backgroundImage = 'none'; } else { box.style.backgroundColor = '#555'; } }
+      if(!box || !d) return; updateBoxText(box, d.bind); 
+      box.style.backgroundColor = ''; 
+      
+      if(showHeatmap && d.bind !== '?') { 
+          let s = boxStats[d.bind]; 
+          if(s && (s.h + s.m) > 0) { 
+              let r = s.h / (s.h + s.m); 
+              box.style.backgroundColor = `rgb(${255*(1-r)}, ${255*r}, 0)`; 
+          } else { 
+              box.style.backgroundColor = '#555'; 
+          } 
+      }
   }
 
   function updateBoxText(box, t) { const m = box.querySelector('.box-mod'), k = box.querySelector('.box-key'); if(!t || t === '?' || t === '...') { m.innerText = ''; k.innerText = t || '?'; } else { let p = t.split('+'); if(p.length > 1) { k.innerText = p.pop(); m.innerText = p.join('+'); } else { m.innerText = ''; k.innerText = t; } } }
@@ -855,30 +747,88 @@
   function updateBoardTransform() { el('board').style.transform = `translate(${panX}px, ${panY}px)`; el('workspace').style.setProperty('--pan-x', panX + 'px'); el('workspace').style.setProperty('--pan-y', panY + 'px'); }
   function isPixelOccupied(tPx, tPy, step, ignIds) { const m = step - 0.1; for(let d of boxesData) { if(ignIds.includes(d.id)) continue; if(Math.abs(tPx - d.px) < m && Math.abs(tPy - d.py) < m) return true; } return false; }
 
+  // --- SAISIE RAPIDE (QUICK-BIND) ---
+  function startQuickBind() {
+      if(isPlayMode) return;
+      const sel = els('.box.selected');
+      if(sel.length === 0) return alert("Sélectionnez les cases au lasso ou au clic pour lancer la Saisie Rapide.");
+      
+      // Tri intelligent : De haut en bas, puis de gauche à droite
+      quickBindQueue = Array.from(sel).sort((a,b) => {
+          let da = getBoxData(a.id), db = getBoxData(b.id);
+          if (Math.abs(da.py - db.py) > 20) return da.py - db.py;
+          return da.px - db.px;
+      });
+      
+      isQuickBinding = true;
+      els('.box').forEach(b => b.classList.remove('selected', 'listening', 'quick-binding'));
+      nextQuickBind();
+  }
+
+  function nextQuickBind() {
+      if(listeningBoxId) { el(listeningBoxId).classList.remove('quick-binding', 'listening'); }
+      if(quickBindQueue.length === 0) { isQuickBinding = false; listeningBoxId = null; showToast("⚡ Saisie terminée"); return; }
+      
+      let nextBox = quickBindQueue.shift();
+      listeningBoxId = nextBox.id;
+      nextBox.classList.add('quick-binding', 'listening');
+      updateBoxText(nextBox, '...');
+  }
+
+  function resolveBind(bindStr) {
+      let d = getBoxData(listeningBoxId); 
+      d.bind = bindStr; 
+      if(!boxStats[bindStr]) boxStats[bindStr] = {h: 0, m: 0}; 
+      applyBoxVisuals(el(listeningBoxId), d); 
+      saveApp(); 
+      
+      if(isQuickBinding) { nextQuickBind(); } 
+      else { el(listeningBoxId).classList.remove('listening', 'quick-binding'); listeningBoxId = null; }
+  }
+
+
   // ==========================================
-  // --- 7. LASSO, SOURIS & CORBEILLE ---
+  // --- 7. SOURIS, PANNEAUX DRAGGABLE & CORBEILLE ---
   // ==========================================
-  el('workspace').addEventListener('mousedown', (e) => { 
+  document.addEventListener('mousedown', (e) => {
+      // DRAG PANELS
+      if (!isPlayMode && e.target.classList.contains('panel-title')) {
+          dragPanel = e.target.closest('.floating-panel');
+          const rect = dragPanel.getBoundingClientRect();
+          dpOffsetX = e.clientX - rect.left;
+          dpOffsetY = e.clientY - rect.top;
+          dragPanel.style.right = 'auto'; 
+          dragPanel.style.bottom = 'auto';
+          e.preventDefault(); 
+          return;
+      }
+
+      if(e.target.closest('.floating-panel') || e.target.closest('#toolbar')) return;
+
       if(isPlayMode) return; 
       if(e.button === 1 || e.button === 2) { isPanning = true; panStartX = e.clientX; panStartY = e.clientY; el('workspace').classList.add('panning'); e.preventDefault(); return; } 
       if(e.target === el('workspace') && e.button === 0) { isLassoing = true; const r = el('workspace').getBoundingClientRect(); startX = e.clientX - r.left; startY = e.clientY - r.top; const lasso = el('selection-lasso'); lasso.style.left = startX + 'px'; lasso.style.top = startY + 'px'; lasso.style.width = '0px'; lasso.style.height = '0px'; lasso.style.display = 'block'; if(!e.shiftKey) els('.box.selected').forEach(b => b.classList.remove('selected')); } 
   });
   
   document.addEventListener('mousemove', (e) => { 
+      if(dragPanel) {
+          dragPanel.style.left = (e.clientX - dpOffsetX) + 'px';
+          dragPanel.style.top = (e.clientY - dpOffsetY) + 'px';
+          return;
+      }
+
       if(isPlayMode) return; 
       if(isPanning) { panX += (e.clientX - panStartX); panY += (e.clientY - panStartY); panStartX = e.clientX; panStartY = e.clientY; updateBoardTransform(); return; } 
       
       const sz = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--box-size')), stp = sz + 2; 
       
       if(isDraggingBox && dragGroupInfo.length > 0) { 
-          // GRILLE DYNAMIQUE
           el('workspace').classList.add('show-drag-grid'); let snapVal = parseFloat(el('snapDivisor').value) || 1; let sV = stp / snapVal; el('workspace').style.backgroundSize = `${sV}px ${sV}px`; el('workspace').style.backgroundPosition = `${panX}px ${panY}px`;
           let mDx = e.clientX - startX, mDy = e.clientY - startY; let dx = Math.round(mDx / sV) * sV, dy = Math.round(mDy / sV) * sV; const mIds = dragGroupInfo.map(i => i.el.id); let isDragInvalid = false; 
           let ghostContainer = el('ghost-container'); ghostContainer.innerHTML = '';
           
           dragGroupInfo.forEach(i => { 
               let tPx = i.startPx + dx, tPy = i.startPy + dy; let scrX = tPx + panX, scrY = tPy + panY;
-              // TOLÉRANCE AUX BORDS (Mouvement fluide sans casser le drag)
               if(scrX < -sz || scrY < -sz || scrX > window.innerWidth || scrY > el('workspace').clientHeight) isDragInvalid = true;
               if(isPixelOccupied(tPx, tPy, stp, mIds)) isDragInvalid = true; 
               
@@ -887,7 +837,6 @@
           }); 
           dragGroupInfo.forEach(i => { if (isDragInvalid) i.el.classList.add('drag-invalid'); else i.el.classList.remove('drag-invalid'); }); 
           
-          // ZONE CORBEILLE : Hitbox réduite au tout bas de l'écran pour éviter les faux-positifs
           const tz = el('trash-zone'); tz.classList.add('active'); if(e.clientY > window.innerHeight - 40) tz.classList.add('hover'); else tz.classList.remove('hover');
       } else if(isLassoing) { 
           const r = el('workspace').getBoundingClientRect(); let cX = e.clientX - r.left, cY = e.clientY - r.top; const lasso = el('selection-lasso'); lasso.style.width = Math.abs(cX - startX) + 'px'; lasso.style.height = Math.abs(cY - startY) + 'px'; lasso.style.left = Math.min(startX, cX) + 'px'; lasso.style.top = Math.min(startY, cY) + 'px'; const lr = lasso.getBoundingClientRect(); 
@@ -896,11 +845,11 @@
   });
   
   document.addEventListener('mouseup', (e) => { 
+      if (dragPanel) { dragPanel = null; return; }
+
       if(isPanning) { isPanning = false; el('workspace').classList.remove('panning'); saveSettings(); saveApp(); return; } 
       if(isDraggingBox) { 
           el('workspace').classList.remove('show-drag-grid'); el('ghost-container').innerHTML = ''; const tz = el('trash-zone'); tz.classList.remove('active', 'hover');
-          
-          // Lâché dans la corbeille (Hitbox plus précise : 40px)
           if(e.clientY > window.innerHeight - 40) { promptDelete(dragGroupInfo.map(i => i.el)); isDraggingBox = false; dragGroupInfo = []; renderAllBoxes(); return; }
           
           const sz = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--box-size')) || 40, stp = sz + 2; let mDx = e.clientX - startX, mDy = e.clientY - startY; let sD = parseFloat(el('snapDivisor').value) || 1, sV = stp / sD; let dx = Math.round(mDx / sV) * sV, dy = Math.round(mDy / sV) * sV; const mIds = dragGroupInfo.map(i => i.el.id); 
@@ -941,73 +890,32 @@
   function resetWholeInterface() { 
       if(!confirm("Réinitialiser l'interface ? (Les raccourcis seront conservés)")) return; let mem = {}; boxesData.forEach(d => { if(d.bind && d.bind !== '?' && d.bind !== '...') mem[d.bind] = d; }); els('.box').forEach(b => b.remove()); boxesData = []; panX = 0; panY = 0; boxCounter = 1; 
       const step = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--box-size')) + 2; const binds = Object.keys(mem); let idx = 0; 
-      for(let y=-1; y<=0; y++) { for(let i=0; i<12; i++) { let b = binds[idx] || '?'; let m = mem[b] || {prio:"0",cast:"0",cd:"0",intr:"false",name:"",color:"",icon:"",offGcd:"false",maxCharges:1,proc:0,resource:0}; let d = addBoxData('box-'+boxCounter++, (i-6)*step, y*step, b, y===-1?'top':'bot', m.prio, m.cast, m.cd, m.intr, m.name, m.color, m.icon, m.offGcd, m.proc, m.maxCharges, m.resource); buildBoxDOM(d); idx++; } } 
+      for(let y=-1; y<=0; y++) { for(let i=0; i<12; i++) { let b = binds[idx] || '?'; let d = addBoxData('box-'+boxCounter++, (i-6)*step, y*step, b, y===-1?'top':'bot'); buildBoxDOM(d); idx++; } } 
       renderAllBoxes(); centerCamera(); saveApp(); if(el('settings-panel').style.display === 'flex') toggleSettingsPanel(); 
   }
 
   // ==========================================
   // --- 8. CONFIGURATION & MENUS ---
   // ==========================================
-  function toggleHeatmap() { if(appState.trainingMode !== 'TRYHARD') return; showHeatmap = !showHeatmap; el('btnHeatmap').style.fontWeight = showHeatmap ? 'bold' : 'normal'; boxesData.forEach(d => applyBoxVisuals(el(d.id), d)); }
+  function toggleHeatmap() { showHeatmap = !showHeatmap; el('btnHeatmap').style.fontWeight = showHeatmap ? 'bold' : 'normal'; boxesData.forEach(d => applyBoxVisuals(el(d.id), d)); }
   function saveSettings() { localStorage.setItem('wow_elvui_trainer_size', el('sizeSlider').value); localStorage.setItem('wow_elvui_trainer_snap', el('snapDivisor').value); }
   function loadSettings() { const sz = localStorage.getItem('wow_elvui_trainer_size'); if(sz) { el('sizeSlider').value = sz; el('sizeInput').value = sz; document.documentElement.style.setProperty('--box-size', sz+'px'); } else { document.documentElement.style.setProperty('--box-size', '40px'); } const sn = localStorage.getItem('wow_elvui_trainer_snap'); if(sn) el('snapDivisor').value = sn; updateBoardTransform(); }
-  function saveTrainingConfig() { localStorage.setItem('wow_elvui_v48_cfg', JSON.stringify({ sound: el('cfgSound').checked, scale: el('cfgFontScale').value, saveLogs: el('cfgSaveLogs').checked, sprint: el('cfgSprint').value, rhythm: el('cfgRhythm').checked, blind: el('cfgBlind').checked, rot: el('cfgRotation').checked, gcd: el('cfgGcd').value, maxRes: el('cfgMaxResource').value, sp: el('cfgStartSpeed').value, st: el('cfgStep').value, to: el('cfgTimeout').value, sc: customScenarios })); }
-  function loadTrainingConfig() { let s = localStorage.getItem('wow_elvui_v48_cfg') || localStorage.getItem('wow_elvui_v46_cfg'); if(s){ let c = JSON.parse(s); if(el('cfgSound')) el('cfgSound').checked = c.sound !== false; if(el('cfgFontScale')) el('cfgFontScale').value = c.scale || 100; if(el('cfgSaveLogs')) el('cfgSaveLogs').checked = c.saveLogs !== false; if(el('cfgSprint')) el('cfgSprint').value = c.sprint || "0"; if(el('cfgRhythm')) el('cfgRhythm').checked = c.rhythm || false; if(el('cfgBlind')) el('cfgBlind').checked = c.blind || false; if(el('cfgRotation')) el('cfgRotation').checked = c.rot || false; if(el('cfgGcd')) el('cfgGcd').value = c.gcd || 1500; if(el('cfgMaxResource')) el('cfgMaxResource').value = c.maxRes || 100; if(el('cfgStartSpeed')) el('cfgStartSpeed').value = c.sp || 1000; if(el('cfgStep')) el('cfgStep').value = c.st || 20; if(el('cfgTimeout')) el('cfgTimeout').value = c.to || 2000; customScenarios = c.sc || []; updatePresetHighlight(); } else { setDifficulty(1500,0,3000, null); } applyFontScale(); }
-  function toggleSettingsPanel() { const s = el('settings-panel').style; if(s.display === 'flex') { s.display = 'none'; if(activeTutType === 'OPTIONS') closeTutorial(); } else { s.display = 'flex'; el('logs-panel').style.display = 'none'; closeSpellModal(); el('feedback-modal').style.display = 'none'; if (!localStorage.getItem('wow_elvui_tut52_OPTIONS')) launchTutorial('OPTIONS', false); } }
-  function toggleLogsPanel() { const s = el('logs-panel').style; s.display = s.display === 'flex' ? 'none' : 'flex'; el('settings-panel').style.display = 'none'; el('feedback-modal').style.display = 'none'; if(s.display === 'flex') renderLogs(); closeSpellModal(); }
+  function saveTrainingConfig() { localStorage.setItem('wow_elvui_v48_cfg', JSON.stringify({ sound: el('cfgSound').checked, scale: el('cfgFontScale').value, saveLogs: el('cfgSaveLogs').checked, sprint: el('cfgSprint').value, rhythm: el('cfgRhythm').checked, blind: el('cfgBlind').checked, seq: el('cfgSequence').value, surv: el('cfgSurvival').checked, sp: el('cfgStartSpeed').value, st: el('cfgStep').value, to: el('cfgTimeout').value })); }
+  function loadTrainingConfig() { let s = localStorage.getItem('wow_elvui_v48_cfg') || localStorage.getItem('wow_elvui_v46_cfg'); if(s){ let c = JSON.parse(s); if(el('cfgSound')) el('cfgSound').checked = c.sound !== false; if(el('cfgFontScale')) el('cfgFontScale').value = c.scale || 100; if(el('cfgSaveLogs')) el('cfgSaveLogs').checked = c.saveLogs !== false; if(el('cfgSprint')) el('cfgSprint').value = c.sprint || "0"; if(el('cfgRhythm')) el('cfgRhythm').checked = c.rhythm || false; if(el('cfgBlind')) el('cfgBlind').checked = c.blind || false; if(el('cfgSequence')) el('cfgSequence').value = c.seq || 1; if(el('cfgSurvival')) el('cfgSurvival').checked = c.surv || false; if(el('cfgStartSpeed')) el('cfgStartSpeed').value = c.sp || 1000; if(el('cfgStep')) el('cfgStep').value = c.st || 20; if(el('cfgTimeout')) el('cfgTimeout').value = c.to || 2000; updatePresetHighlight(); } else { setDifficulty(1500,0,3000, null); } applyFontScale(); }
+  function toggleSettingsPanel() { const s = el('settings-panel').style; if(s.display === 'flex') { s.display = 'none'; if(activeTutType === 'OPTIONS') closeTutorial(); } else { s.display = 'flex'; el('logs-panel').style.display = 'none'; el('feedback-modal').style.display = 'none'; if (!localStorage.getItem('wow_elvui_tut53_OPTIONS')) launchTutorial('OPTIONS', false); } }
+  function toggleLogsPanel() { const s = el('logs-panel').style; s.display = s.display === 'flex' ? 'none' : 'flex'; el('settings-panel').style.display = 'none'; el('feedback-modal').style.display = 'none'; if(s.display === 'flex') renderLogs(); }
   function applyFontScale() { document.documentElement.style.setProperty('--font-scale', el('cfgFontScale').value/100); saveTrainingConfig(); }
   function setDifficulty(sp, st, to, btn) { el('cfgStartSpeed').value = sp; el('cfgStep').value = st; el('cfgTimeout').value = to; saveTrainingConfig(); els('.preset-btn').forEach(b => b.classList.remove('active-preset')); if(btn) btn.classList.add('active-preset'); }
   function customConfigChanged() { els('.preset-btn').forEach(b => b.classList.remove('active-preset')); saveTrainingConfig(); }
   function updatePresetHighlight() { const sp = el('cfgStartSpeed').value, st = el('cfgStep').value, to = el('cfgTimeout').value; els('.preset-btn').forEach(b => b.classList.remove('active-preset')); if(sp==1500 && st==0 && to==3000) { els('.preset-btn')[0].classList.add('active-preset'); } else if(sp==1000 && st==10 && to==2000) { els('.preset-btn')[1].classList.add('active-preset'); } else if(sp==700 && st==10 && to==1500) { els('.preset-btn')[2].classList.add('active-preset'); } else if(sp==500 && st==5 && to==1000) { els('.preset-btn')[3].classList.add('active-preset'); } else if(sp==300 && st==0 && to==800) { els('.preset-btn')[4].classList.add('active-preset'); } }
 
   // ==========================================
-  // --- 9. GRIMOIRE & SORTS ---
+  // --- 10. MOTEUR D'ENTRAÎNEMENT (V55) ---
   // ==========================================
-  function toggleGrimoire() { if(appState.trainingMode !== 'TRYHARD') return; const p = el('grimoire-panel').style; p.display = p.display === 'flex' ? 'none' : 'flex'; }
-  function createGrimoireSpell() { const n = prompt("Nom du sort :"); if(!n) return; appState.grimoire.push({ id:Date.now(), name:n, color:'', icon:'', prio:0, cast:0, cd:0, charges:1, offGcd:'false', intr:'false', proc:0, resource:0 }); renderGrimoire(); saveApp(); }
-  function renderGrimoire() { const list = el('spell-list'); list.innerHTML = ''; appState.grimoire.forEach(s => { const elItem = document.createElement('div'); elItem.className = 'spell-item'; elItem.draggable = true; elItem.ondragstart = (e) => e.dataTransfer.setData('text/plain', s.id); elItem.innerHTML = `<div class="spell-icon-preview" style="background-color:${s.color}; background-image:url('${s.icon}')"></div><div style="flex:1;">${s.name} <span style="color:#a6e3a1;font-size:10px;">${s.resource!=0?s.resource:''}</span></div><button onclick="editGrimoireSpell(${s.id})" style="padding:2px 5px;">⚙️</button><button onclick="deleteGrimoireSpell(${s.id})" style="padding:2px 5px; color:var(--elvui-error);">✖</button>`; list.appendChild(elItem); }); }
-  function deleteGrimoireSpell(id) { if(confirm("Supprimer ce sort du Grimoire ?")) { appState.grimoire = appState.grimoire.filter(s => s.id !== id); renderGrimoire(); saveApp(); } }
-  
-  function editGrimoireSpell(id) { 
-      const s = appState.grimoire.find(x => x.id === id); editingSpellBoxId = "GRIMOIRE_" + id; 
-      el('spell-name').value = s.name; el('spell-priority').value = s.prio; el('spell-cast').value = s.cast; el('spell-cd').value = s.cd; el('spell-interrupt').checked = (s.intr === 'true'); el('spell-color').value = s.color || ''; el('spell-icon').value = s.icon || ''; el('spell-offgcd').checked = (s.offGcd === 'true'); el('spell-charges').value = s.charges || 1; el('spell-proc').value = s.proc || 0; el('spell-resource').value = s.resource || 0; 
-      let modal = el('spell-modal'); modal.style.display = 'flex'; modal.style.left = '300px'; modal.style.top = '100px'; 
-  }
-  function openSpellModal(box, e) { 
-      editingSpellBoxId = box.id; let d = getBoxData(box.id); 
-      el('spell-name').value = d.name; el('spell-priority').value = d.prio; el('spell-cast').value = d.cast; el('spell-cd').value = d.cd; el('spell-interrupt').checked = (d.intr === 'true'); el('spell-color').value = d.color || ''; el('spell-icon').value = d.icon || ''; el('spell-offgcd').checked = (d.offGcd === 'true'); el('spell-charges').value = d.maxCharges || 1; el('spell-proc').value = d.proc || 0; el('spell-resource').value = d.resource || 0; 
-      let modal = el('spell-modal'); modal.style.display = 'flex'; let rect = modal.getBoundingClientRect(); let x = e.clientX + 15, y = e.clientY - 50;
-      if (x + rect.width > window.innerWidth) x = window.innerWidth - rect.width - 15; if (y + rect.height > window.innerHeight) y = window.innerHeight - rect.height - 15;
-      if (x < 15) x = 15; if (y < 15) y = 15; modal.style.left = x + 'px'; modal.style.top = y + 'px'; 
-  }
-  function closeSpellModal() { el('spell-modal').style.display = 'none'; editingSpellBoxId = null; }
-  
-  function saveSpellProperties() { 
-      if(!editingSpellBoxId) return; 
-      if(editingSpellBoxId.startsWith("GRIMOIRE_")) { 
-          const id = parseInt(editingSpellBoxId.split('_')[1]); const s = appState.grimoire.find(x => x.id === id); 
-          s.name = el('spell-name').value; s.prio = el('spell-priority').value; s.cast = el('spell-cast').value; s.cd = el('spell-cd').value; s.intr = el('spell-interrupt').checked ? 'true' : 'false'; s.color = el('spell-color').value; s.icon = el('spell-icon').value; s.offGcd = el('spell-offgcd').checked ? 'true' : 'false'; s.charges = parseInt(el('spell-charges').value); s.proc = el('spell-proc').value; s.resource = parseInt(el('spell-resource').value) || 0; 
-          renderGrimoire(); closeSpellModal(); saveApp(); return; 
-      } 
-      let d = getBoxData(editingSpellBoxId); 
-      d.name = el('spell-name').value; d.prio = el('spell-priority').value; d.cast = el('spell-cast').value; d.cd = el('spell-cd').value; d.intr = el('spell-interrupt').checked ? 'true' : 'false'; d.color = el('spell-color').value; d.icon = el('spell-icon').value; d.offGcd = el('spell-offgcd').checked ? 'true' : 'false'; d.maxCharges = parseInt(el('spell-charges').value); d.currentCharges = d.maxCharges; d.proc = el('spell-proc').value; d.resource = parseInt(el('spell-resource').value) || 0; 
-      applyBoxVisuals(el(editingSpellBoxId), d); closeSpellModal(); saveApp(); 
-  }
-
-  // ==========================================
-  // --- 10. MOTEUR D'ENTRAÎNEMENT & GAMEPLAY ---
-  // ==========================================
-  function updateResourceBar() {
-      if(appState.trainingMode !== 'TRYHARD') return;
-      const maxR = parseInt(el('cfgMaxResource').value) || 100; const w = el('resource-bar-wrapper'), f = el('resource-bar-fill'), t = el('resource-bar-text');
-      if (!isPlayMode) { w.style.display = 'none'; return; } w.style.display = 'block';
-      let pct = Math.max(0, Math.min(100, (currentResource / maxR) * 100)); f.style.width = pct + '%'; t.innerText = `${currentResource} / ${maxR}`;
-  }
-  
-  function spawnFCT(elBox, rTime, type) { 
+  function spawnFCT(elBox, rTime, type, pts) { 
       const f = document.createElement('div'); 
       if(type === 'hit') {
-          if(rTime < 200) { f.className = 'fct crit'; f.innerText = `${rTime}ms !`; } else { f.className = 'fct normal-hit'; f.innerText = `${rTime}ms`; }
+          if(rTime < 250) { f.className = 'fct crit'; f.innerText = `+${pts}`; } else { f.className = 'fct normal-hit'; f.innerText = `+${pts}`; }
       } else { f.className = 'fct fall-miss'; f.innerText = 'Raté!'; }
       elBox.appendChild(f); setTimeout(() => f.remove(), 1000); 
   }
@@ -1025,47 +933,102 @@
       }
   }
 
+  function updateLivesDisplay() {
+      if(currentLives < 0) currentLives = 0;
+      el('lives-display').innerText = '❤️'.repeat(currentLives) + '🖤'.repeat(3 - currentLives);
+  }
+
+  function clearActiveTargets() {
+      activeTargets.forEach(t => {
+          let boxEl = el(t.id);
+          if(boxEl) {
+              boxEl.classList.remove('active-target');
+              boxEl.querySelectorAll('.sequence-badge, .rhythm-ring').forEach(e => e.remove());
+          }
+      });
+      activeTargets = [];
+  }
+
   function handlePlayInput(bind) {
       if(!isPlayMode || isProcessingInput) return;
-      
-      // ANTI DOUBLE-TAP GHOST FAULT : Ignore l'input si la cible n'existe pas ET si c'est la même touche frappée il y a moins de 200ms
-      if (!activeTargetId) {
+      if (activeTargets.length === 0) { 
           if(bind === lastHitBind && (performance.now() - lastHitTime < 200)) return; 
-          misses++; updateStats(); // Faute pure dans le vide
-          return;
+          misses++; updateStats(); return; 
       }
       
       simulateKeypress(bind); isProcessingInput = true; clearTimeout(inputDebounceTimer); inputDebounceTimer = setTimeout(() => { isProcessingInput = false; }, 150);
-      const tId = activeTargetId; activeTargetId = null; clearTimeout(failTimeoutId);
-      const t = el(tId); const d = getBoxData(tId); const isNorm = (appState.trainingMode === 'NORMAL');
-
-      if (!isNorm && isPlayerCasting && d.intr === 'true') { clearTimeout(castFinishTimeoutId); isPlayerCasting = false; stopGlobalCastBar(); triggerMiss(t, d); return; }
       
-      if (d.bind === bind) {
-          lastHitBind = bind; lastHitTime = performance.now();
-          playTone('hit', tId); const rTime = Math.round(performance.now() - startTime); hits++; totalReactTime += rTime;
-          if(boxStats[bind]) boxStats[bind].h++; spawnFCT(t, rTime, 'hit');
-          t.classList.remove('active-target'); t.classList.add('pulse-hit'); setTimeout(() => t.classList.remove('pulse-hit'), 300);
-          createParticles(t); updateStats(); updateCombo(true); t.querySelectorAll('.rhythm-ring').forEach(r => r.remove());
+      let target = activeTargets[0];
+      let tId = target.id;
+      let d = target.d;
+      let t = el(tId);
 
-          if (!isNorm) {
-              const mR = parseInt(el('cfgMaxResource').value) || 100; currentResource = Math.max(0, Math.min(mR, currentResource + (parseInt(d.resource)||0))); updateResourceBar();
-              boxesData.forEach(box => { if(box.proc > 0 && (Math.random()*100) <= box.proc) { box.isGlowing = true; box.currentCharges = box.maxCharges; box.currentCd = 0; applyBoxVisuals(el(box.id), box); const ol = el(box.id).querySelector('.box-cd-overlay'); if(ol) ol.remove(); } });
-              if(d.maxCharges > 1) { d.currentCharges--; applyBoxVisuals(t, d); }
-              let gcdTime = parseInt(el('cfgGcd').value) || 1500;
-              if (d.offGcd !== 'true') { isGlobalCooldown = true; boxesData.forEach(box => { if(box.offGcd !== 'true' && box.id !== tId && box.currentCd <= 0 && box.currentCharges > 0) triggerGCDVisual(el(box.id), gcdTime); }); setTimeout(() => isGlobalCooldown = false, gcdTime); }
-              let c = parseInt(d.cast)||0, cd = parseInt(d.cd)||0;
-              if (cd > 0 && d.currentCd <= 0) applyCD(d, cd); 
-              if (c > 0) { isPlayerCasting = true; currentCastInterruptible = (d.intr === 'true'); startGlobalCastBar(c, d.name); castFinishTimeoutId = setTimeout(() => { isPlayerCasting = false; stopGlobalCastBar(); triggerNextTarget(); }, c); } else { let w = d.offGcd !== 'true' ? Math.max(0, gcdTime) : 0; setTimeout(triggerNextTarget, w > 0 ? w : 50); }
-          } else { currentDelay = Math.max(100, currentDelay - parseInt(el('cfgStep').value)); triggerNextTarget(); }
-      } else { triggerMiss(t, d); }
+      if (d.bind === bind) {
+          sessionKeys.add(bind); 
+          lastHitBind = bind; lastHitTime = performance.now();
+          if(!sessionStats[bind]) sessionStats[bind] = {h:0, m:0, rt:0};
+          
+          let rTime = Math.round(performance.now() - startTime); 
+          hits++; totalReactTime += rTime;
+          sessionStats[bind].h++; sessionStats[bind].rt += rTime;
+          if(boxStats[bind]) boxStats[bind].h++; 
+          
+          // CALCUL DU SCORE (V55)
+          let pts = 10;
+          if(rTime <= 250) pts = 100;
+          else if(rTime <= 500) pts = 50;
+          else if(rTime <= 800) pts = 25;
+          let mult = 1 + Math.floor(currentCombo / 10) * 0.5;
+          let wonPts = Math.round(pts * mult);
+          score += wonPts;
+          
+          playTone('hit', tId);
+          spawnFCT(t, rTime, 'hit', wonPts);
+          t.classList.remove('active-target'); t.classList.add('pulse-hit'); setTimeout(() => t.classList.remove('pulse-hit'), 300);
+          createParticles(t); updateStats(); updateCombo(true); 
+          t.querySelectorAll('.rhythm-ring, .sequence-badge').forEach(r => r.remove());
+
+          activeTargets.shift(); 
+          
+          if(activeTargets.length === 0) {
+              clearTimeout(failTimeoutId);
+              currentDelay = Math.max(100, currentDelay - parseInt(el('cfgStep').value)); 
+              triggerNextTarget();
+          } else {
+              if(el('cfgBlind').checked) el('blind-prompt').innerText = activeTargets.map(tar => tar.d.bind).join(' ➔ ');
+              clearTimeout(failTimeoutId);
+              startTime = performance.now();
+              failTimeoutId = setTimeout(() => { 
+                  if(isPlayMode && activeTargets.length > 0) { triggerMiss(el(activeTargets[0].id), activeTargets[0].d, true); }
+              }, parseInt(el('cfgTimeout').value));
+          }
+      } else { 
+          triggerMiss(t, d, false); 
+      }
   }
 
-  function triggerGCDVisual(elBx, ms) { if(!elBx || elBx.querySelector('.box-gcd-overlay')) return; const o = document.createElement('div'); o.className = 'box-gcd-overlay'; o.style.animationDuration = ms + 'ms'; elBx.appendChild(o); setTimeout(() => { if(o.parentNode) o.remove(); }, ms); }
-  function applyCD(d, ms) { d.currentCd = ms; const bxEl = el(d.id); if(!bxEl) return; bxEl.classList.add('on-cd'); const o = document.createElement('div'); o.className = 'box-cd-overlay'; o.innerHTML = `<div class="box-cd-text"></div>`; bxEl.appendChild(o); const i = setInterval(() => { d.currentCd -= 100; if(d.currentCd <= 0 || !isPlayMode) { clearInterval(i); if(d.currentCharges < d.maxCharges) { d.currentCharges++; applyBoxVisuals(bxEl,d); } if(d.currentCharges < d.maxCharges && isPlayMode) d.currentCd = parseInt(d.cd); else { bxEl.classList.remove('on-cd'); if(o.parentNode) o.remove(); } } else o.firstChild.innerText = (d.currentCd/1000).toFixed(1); }, 100); }
-  function startGlobalCastBar(ms, n) { const w = el('global-castbar-wrapper'), f = el('global-castbar-fill'); el('global-castbar-text').innerText = n || 'Cast...'; w.style.display = 'flex'; f.style.width = '0%'; void f.offsetWidth; f.style.transition = `width ${ms}ms linear`; f.style.width = '100%'; }
-  function stopGlobalCastBar() { el('global-castbar-wrapper').style.display = 'none'; }
-  function triggerMiss(t, d) { playTone('miss'); misses++; if(boxStats[d.bind]) boxStats[d.bind].m++; spawnFCT(t, 0, 'miss'); t.classList.remove('active-target'); t.classList.add('shake-miss'); t.querySelectorAll('.rhythm-ring').forEach(r => r.remove()); updateCombo(false); setTimeout(() => t.classList.remove('shake-miss'), 300); updateStats(); isProcessingInput = false; triggerNextTarget(); }
+  function triggerMiss(t, d, isTimeout) { 
+      clearTimeout(failTimeoutId);
+      playTone('miss'); misses++; 
+      
+      if(!sessionStats[d.bind]) sessionStats[d.bind] = {h:0, m:0, rt:0};
+      sessionStats[d.bind].m++;
+      if(boxStats[d.bind]) boxStats[d.bind].m++; 
+      
+      spawnFCT(t, 0, 'miss'); 
+      t.classList.add('shake-miss'); setTimeout(() => t.classList.remove('shake-miss'), 300); 
+      updateCombo(false); updateStats(); 
+      
+      clearActiveTargets();
+      isProcessingInput = false; 
+
+      if(el('cfgSurvival').checked) { 
+          currentLives--; 
+          updateLivesDisplay(); 
+          if(currentLives <= 0) { togglePlayMode(); showScoreModal(); return; } 
+      }
+      triggerNextTarget(); 
+  }
 
   function togglePlayMode() {
       const b = el('modeBtn');
@@ -1073,7 +1036,7 @@
           if(!boxesData.length) return alert("Ajoutez des cases d'abord."); 
           if(!boxesData.some(d => d.bind !== '?' && d.bind !== '')) return alert("Assignez vos touches (Double-clic) d'abord.");
           
-          initAudio(); el('settings-panel').style.display = 'none'; el('logs-panel').style.display = 'none'; if(el('grimoire-panel')) el('grimoire-panel').style.display = 'none'; closeSpellModal(); el('feedback-modal').style.display = 'none';
+          initAudio(); el('settings-panel').style.display = 'none'; el('logs-panel').style.display = 'none'; el('feedback-modal').style.display = 'none';
           
           let cdEl = el('countdown'); cdEl.style.display = 'block'; let count = 3; cdEl.innerText = count;
           b.innerText = "■ Arrêter"; b.className = "danger"; b.style.pointerEvents = 'none';
@@ -1085,110 +1048,144 @@
               else { clearInterval(countdownTimerId); countdownTimerId = null; cdEl.innerText = "GO !"; playMilestoneSound(0); setTimeout(() => cdEl.style.display = 'none', 500); b.style.pointerEvents = 'auto'; startActualPlay(); }
           }, 1000);
       } else {
-          isPlayMode = false; b.innerText = "▶ Lancer"; b.className = "success"; b.style.pointerEvents = 'auto'; document.body.classList.remove('playing'); el('stats').style.display = "none";
+          isPlayMode = false; b.innerText = "▶ Lancer"; b.className = "success"; b.style.pointerEvents = 'auto'; document.body.classList.remove('playing', 'bloodlust'); el('stats').style.display = "none";
           if(countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; el('countdown').style.display = 'none'; }
-          clearTimeout(spawnTimeoutId); clearTimeout(failTimeoutId); clearTimeout(castFinishTimeoutId); clearInterval(sprintTimerId);
-          isPlayerCasting = false; stopGlobalCastBar(); 
-          ['resource-bar-wrapper', 'combo-counter', 'blind-prompt', 'timerVal'].forEach(id => { if(el(id)) el(id).style.display = 'none'; }); document.body.removeAttribute('data-blind');
-          if(activeTargetId) { let t = el(activeTargetId); if(t) { t.classList.remove('active-target','shake-miss', 'pulse-hit'); t.querySelectorAll('.rhythm-ring').forEach(r => r.remove()); } } 
-          activeTargetId = null; isProcessingInput = false; try { addLogSession(); } catch(e) { console.error(e); } boxesData.forEach(d => { let bx = el(d.id); if(bx) applyBoxVisuals(bx, d);});
+          clearTimeout(spawnTimeoutId); clearTimeout(failTimeoutId); clearInterval(sprintTimerId);
+          ['combo-counter', 'blind-prompt', 'timerVal', 'lives-display'].forEach(id => { if(el(id)) el(id).style.display = 'none'; }); document.body.removeAttribute('data-blind');
+          clearActiveTargets();
+          isProcessingInput = false; try { addLogSession(); } catch(e) { console.error(e); } boxesData.forEach(d => { let bx = el(d.id); if(bx) applyBoxVisuals(bx, d);});
       }
   }
 
   function startActualPlay() {
       document.body.setAttribute('data-mode', 'PLAY'); document.body.classList.add('playing'); showHeatmap = false; if(el('btnHeatmap')) el('btnHeatmap').style.fontWeight = 'normal';
-      boxesData.forEach(d => { d.currentCd = 0; d.currentCharges = d.maxCharges; d.isGlowing = false; let bxEl = el(d.id); if(bxEl){ bxEl.classList.remove('listening','selected','on-cd','glowing'); bxEl.querySelectorAll('.box-cd-overlay, .box-gcd-overlay, .rhythm-ring').forEach(o=>o.remove()); applyBoxVisuals(bxEl, d); } });
-      el('stats').style.display = "flex"; hits = 0; misses = 0; totalReactTime = 0; currentDelay = parseInt(el('cfgStartSpeed').value); isPlayerCasting = false; isGlobalCooldown = false; stopGlobalCastBar(); updateStats(); el('apmVal').innerText = '0'; playSessionStart = performance.now(); 
+      sessionKeys.clear(); sessionStats = {}; score = 0;
       
-      // Options universelles (Arcade + Tryhard)
+      if(el('cfgSurvival').checked) { currentLives = 3; updateLivesDisplay(); el('lives-display').style.display = 'block'; } else { el('lives-display').style.display = 'none'; }
+
+      boxesData.forEach(d => { let bxEl = el(d.id); if(bxEl){ bxEl.classList.remove('listening','selected'); bxEl.querySelectorAll('.rhythm-ring, .sequence-badge').forEach(o=>o.remove()); applyBoxVisuals(bxEl, d); } });
+      el('stats').style.display = "flex"; hits = 0; misses = 0; totalReactTime = 0; currentDelay = parseInt(el('cfgStartSpeed').value); updateStats(); playSessionStart = performance.now(); 
+      
       currentCombo = 0; maxCombo = 0; el('combo-counter').innerText = "0 Combo"; el('combo-counter').style.display = 'block'; 
       if(el('cfgBlind').checked) { document.body.setAttribute('data-blind', 'true'); el('blind-prompt').style.display = 'block'; el('blind-prompt').innerText = '...'; } 
-      const sV = parseInt(el('cfgSprint').value) || 0; 
-      if(sV > 0) { 
-          el('timerVal').style.display = 'inline'; 
-          sprintTimerId = setInterval(() => { 
-              let left = sV * 1000 - (performance.now() - playSessionStart); 
-              if(left <= 0) { togglePlayMode(); showScoreModal(); return; } 
-              el('timerVal').innerText = `⏱️ ${Math.ceil(left/1000)}s`; 
-          }, 100); 
-      } 
       
-      if(appState.trainingMode === 'TRYHARD') { 
-          currentResource = 0; updateResourceBar(); 
-      }
+      const sV = parseInt(el('cfgSprint').value) || 0; 
+      if(sV > 0 && !el('cfgSurvival').checked) { el('timerVal').style.display = 'inline'; sprintTimerId = setInterval(() => { let left = sV * 1000 - (performance.now() - playSessionStart); if(left <= 0) { togglePlayMode(); showScoreModal(); return; } el('timerVal').innerText = `⏱️ ${Math.ceil(left/1000)}s`; }, 100); } 
       
       triggerNextTarget();
   }
 
   function triggerNextTarget() {
-      if(!isPlayMode) return; clearTimeout(spawnTimeoutId); isProcessingInput = false; const isNorm = (appState.trainingMode === 'NORMAL');
-      let valid = isNorm ? boxesData.filter(d => d.bind !== '?' && d.bind !== '') : boxesData.filter(d => d.bind !== '?' && d.bind !== '' && d.currentCharges > 0 && d.currentCd <= 0 && (!isGlobalCooldown || d.offGcd === 'true') && (currentResource + (parseInt(d.resource)||0) >= 0));
+      if(!isPlayMode) return; clearTimeout(spawnTimeoutId); isProcessingInput = false; 
+      let valid = boxesData.filter(d => d.bind !== '?' && d.bind !== '');
       if(valid.length === 0) { spawnTimeoutId = setTimeout(triggerNextTarget, 100); return; }
       
-      let pool = valid;
-      if(!isNorm) { const gl = valid.filter(d => d.isGlowing); if(gl.length > 0) pool = gl; else { const pB = valid.filter(d => parseInt(d.prio) > 0); if(pB.length > 0) { let hp = Math.min(...pB.map(d => parseInt(d.prio))); pool = pB.filter(d => parseInt(d.prio) === hp); } else { pool = valid.filter(d => parseInt(d.prio) === 0); if(pool.length === 0) pool = valid; } } }
+      let seqCount = parseInt(el('cfgSequence').value) || 1;
+      let tempPool = [...valid]; let picked = [];
+      for(let i=0; i<seqCount; i++) {
+          if(tempPool.length === 0) break;
+          let idx = Math.floor(Math.random() * tempPool.length);
+          picked.push(tempPool[idx]);
+          tempPool.splice(idx, 1);
+      }
+      activeTargets = picked.map(d => ({id: d.id, d: d}));
       
-      const d = pool[Math.floor(Math.random() * pool.length)]; activeTargetId = d.id;
       spawnTimeoutId = setTimeout(() => { 
-          if(!isPlayMode) return; if(!isNorm && (d.currentCharges <= 0 || d.currentCd > 0 || (isGlobalCooldown && d.offGcd !== 'true'))) { triggerNextTarget(); return; } 
-          if(d.isGlowing) { d.isGlowing = false; applyBoxVisuals(el(d.id), d); } 
-          let boxEl = el(d.id); boxEl.classList.add('active-target'); startTime = performance.now(); let tout = parseInt(el('cfgTimeout').value);
+          if(!isPlayMode) return; 
+          let tout = parseInt(el('cfgTimeout').value);
           
-          if(el('cfgBlind').checked) el('blind-prompt').innerText = d.bind; 
-          if(el('cfgRhythm').checked && !el('cfgBlind').checked) { 
-              let r = document.createElement('div'); r.className = 'rhythm-ring'; r.style.animationDuration = tout + 'ms'; boxEl.appendChild(r); 
-          }
+          activeTargets.forEach((t, idx) => {
+              let boxEl = el(t.id); boxEl.classList.add('active-target'); 
+              if(seqCount > 1) { let badge = document.createElement('div'); badge.className = 'sequence-badge'; badge.innerText = idx + 1; boxEl.appendChild(badge); }
+              if(el('cfgRhythm').checked && !el('cfgBlind').checked) { let r = document.createElement('div'); r.className = 'rhythm-ring'; r.style.animationDuration = tout + 'ms'; boxEl.appendChild(r); }
+          });
           
-          failTimeoutId = setTimeout(() => { if(isPlayMode && activeTargetId === d.id) triggerMiss(boxEl, d); }, tout); 
+          if(el('cfgBlind').checked) el('blind-prompt').innerText = activeTargets.map(t => t.d.bind).join(' ➔ '); 
+          
+          startTime = performance.now();
+          failTimeoutId = setTimeout(() => { if(isPlayMode && activeTargets.length > 0) triggerMiss(el(activeTargets[0].id), activeTargets[0].d, true); }, tout); 
       }, Math.max(50, Math.random() * currentDelay));
   }
 
-  // L'APM EST CALCULE UNIQUEMENT SUR LA DUREE EFFECTIVE DE JEU
   function updateStats() { 
       el('hitsVal').innerText = hits; el('missesVal').innerText = misses; el('reactVal').innerText = hits > 0 ? Math.round(totalReactTime/hits) + ' ms' : '- ms'; 
       let dur = (performance.now() - playSessionStart) / 60000; 
-      // Calcul d'APM précis : (Hits + Fautes) / Durée
-      el('apmVal').innerText = dur > 0 ? Math.round((hits+misses)/dur) : 0; 
+      let apm = dur > 0 ? Math.round((hits+misses)/dur) : 0;
+      el('apmVal').innerText = apm; 
+      el('scoreVal').innerText = score;
+      
+      // BLOODLUST EFFECT V55
+      if (currentCombo >= 50 || apm >= 100) { document.body.classList.add('bloodlust'); } 
+      else { document.body.classList.remove('bloodlust'); }
   }
+  
   function showScoreModal() { 
       let acc = hits + misses > 0 ? Math.round((hits/(hits+misses))*100) : 0; let r = hits > 0 ? Math.round(totalReactTime/hits) : 0; let dur = (performance.now() - playSessionStart) / 60000; let apm = dur > 0 ? Math.round((hits+misses)/dur) : 0; 
-      el('sm-acc').innerText = acc + "%"; el('sm-apm').innerText = apm; el('sm-react').innerText = r + " ms"; el('sm-combo').innerText = maxCombo; el('sm-hits').innerText = hits; el('sm-misses').innerText = misses; el('score-modal').style.display = 'block'; 
+      el('sm-acc').innerText = acc + "%"; el('sm-apm').innerText = apm; el('sm-react').innerText = r + " ms"; el('sm-combo').innerText = maxCombo; el('sm-hits').innerText = hits; el('sm-misses').innerText = misses; 
+      el('sm-score').innerText = score;
+      
+      let wkArray = Object.keys(sessionStats).map(k => ({ bind: k, h: sessionStats[k].h, m: sessionStats[k].m, avgRt: sessionStats[k].h > 0 ? Math.round(sessionStats[k].rt / sessionStats[k].h) : 0 })).filter(k => k.m > 0 || k.h > 0);
+      wkArray.sort((a, b) => b.m - a.m || b.avgRt - a.avgRt);
+      let top3 = wkArray.slice(0, 3);
+      let wkHTML = top3.map(k => "• <b>" + k.bind + "</b> : " + k.m + " fautes (" + k.avgRt + "ms moy)").join('<br>');
+      el('worst-keys').innerHTML = "<b>📉 Pires touches (Session) :</b><br>" + (wkHTML || "Aucune erreur ! Parfait !");
+      
+      el('score-modal').style.display = 'block'; 
   }
   function closeScore() { el('score-modal').style.display = 'none'; }
+  
+  function shareToDiscord() {
+      let acc = hits + misses > 0 ? Math.round((hits/(hits+misses))*100) : 0; 
+      let r = hits > 0 ? Math.round(totalReactTime/hits) : 0; 
+      let dur = (performance.now() - playSessionStart) / 60000; 
+      let apm = dur > 0 ? Math.round((hits+misses)/dur) : 0;
+      
+      let act = document.querySelector('.preset-btn.active-preset'); 
+      let pDifficulty = act ? act.innerText.split(' (')[0] : 'Personnalisé';
+      if(el('cfgSurvival').checked) pDifficulty += " [SURVIE]";
+      if(parseInt(el('cfgSequence').value) > 1) pDifficulty += " [SÉQx" + el('cfgSequence').value + "]";
+      
+      let distinctKeys = sessionKeys.size;
+      
+      let text = `🎯 **WoW Shortcut Trainer** - Session Terminée !\n` +
+                 `👤 Profil : **${appState.currentProfile}** | Mode : **${pDifficulty}**\n\n` +
+                 `📊 **Statistiques :**\n` +
+                 `⚡ APM : **${apm}** (Score : ${score})\n` +
+                 `🎯 Précision : **${acc}%** (${hits} ✅ / ${misses} ❌)\n` +
+                 `⏱️ Réaction moy. : **${r}ms**\n` +
+                 `🔥 Max Combo : **${maxCombo}**\n` +
+                 `🎹 Touches distinctes : **${distinctKeys}**\n\n` +
+                 `*Forgez votre mémoire musculaire sur l'outil de Kiipey !*`;
+                 
+      navigator.clipboard.writeText(text).then(() => {
+          showToast("📋 Résumé copié !");
+      }).catch(err => {
+          alert("Erreur lors de la copie.");
+      });
+  }
 
   function addLogSession() { 
       if(!el('cfgSaveLogs').checked || (hits === 0 && misses === 0)) return; 
       let acc = Math.round((hits/(hits+misses))*100); let r = hits > 0 ? Math.round(totalReactTime/hits) : 0; let dur = (performance.now() - playSessionStart) / 60000; let apm = dur > 0 ? Math.round((hits+misses)/dur) : 0; 
       let act = document.querySelector('.preset-btn.active-preset'); let pDifficulty = act ? act.innerText.split(' (')[0] : 'Perso';
+      if(el('cfgSurvival').checked) pDifficulty += " (Survie)"; if(parseInt(el('cfgSequence').value) > 1) pDifficulty += " (Séquence)";
       const n = new Date(); const dStr = `${n.getDate().toString().padStart(2,'0')}/${(n.getMonth()+1).toString().padStart(2,'0')} ${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}`; 
-      let logObj = { id: Date.now(), date: dStr, profile: pDifficulty, hits, misses, accuracy: acc, avgReact: r, apm };
-      let p = appState.profiles[appState.currentProfile]; if(!p) return; if(!p.logsNormal) p.logsNormal = []; if(!p.logsTryhard) p.logsTryhard = [];
-      if(appState.trainingMode === 'NORMAL') p.logsNormal.unshift(logObj); else p.logsTryhard.unshift(logObj);
+      let logObj = { id: Date.now(), date: dStr, profile: pDifficulty, hits, misses, accuracy: acc, avgReact: r, apm, score };
+      let p = appState.profiles[appState.currentProfile]; if(!p) return; if(!p.logs) p.logs = [];
+      p.logs.unshift(logObj);
       saveTrainingConfig(); saveApp(); 
   }
 
   function renderLogs() { 
       const b = el('logs-tbody'); b.innerHTML = ''; 
-      
       let allLogs = [];
-      Object.keys(appState.profiles).forEach(k => {
-          let p = appState.profiles[k];
-          let logs = appState.trainingMode === 'NORMAL' ? (p.logsNormal || []) : (p.logsTryhard || []);
-          // On injecte le nom du layout dans chaque objet log
-          let logsWithProfileName = logs.map(l => ({...l, profileName: k}));
-          allLogs = allLogs.concat(logsWithProfileName);
-      });
-      
-      // On trie du plus récent au plus ancien
+      Object.keys(appState.profiles).forEach(k => { let p = appState.profiles[k]; let logs = p.logs || []; let logsWithProfileName = logs.map(l => ({...l, profileName: k})); allLogs = allLogs.concat(logsWithProfileName); });
       allLogs.sort((a, b) => b.id - a.id);
-      
       if(!allLogs.length) { b.innerHTML = '<tr><td colspan="7">Aucun log.</td></tr>'; el('log-total-sessions').innerText = 0; el('log-avg-acc').innerText = '0%'; el('log-avg-apm').innerText = 0; return; } 
-      
       let th = 0, tm = 0, tr = 0, nr = 0, ta = 0; 
       allLogs.forEach(log => { 
-          th += log.hits; tm += log.misses; if(log.hits > 0){ tr += log.avgReact; nr++; ta += log.apm; } 
-          const row = document.createElement('tr'); 
-          row.innerHTML = `<td>${log.date}</td><td><b>${log.profileName}</b><br><span style="font-size:9px;color:#6c7086">${log.profile}</span></td><td>${log.hits}</td><td>${log.accuracy}%</td><td>${log.avgReact}ms / ${log.apm} APM</td><td><button onclick="deleteLog(${log.id}, '${log.profileName}')">✖</button></td>`; 
+          th += log.hits; tm += log.misses; if(log.hits > 0){ tr += log.avgReact; nr++; ta += log.apm; } const row = document.createElement('tr'); 
+          row.innerHTML = `<td>${log.date}</td><td><b>${log.profileName}</b><br><span style="font-size:9px;color:#6c7086">${log.profile}</span></td><td>${log.hits}</td><td>${log.accuracy}%</td><td>${log.avgReact}ms / ${log.apm} APM<br><span style="color:#cba6f7">${log.score||0} pts</span></td><td><button onclick="deleteLog(${log.id}, '${log.profileName}')">✖</button></td>`; 
           b.appendChild(row); 
       }); 
       el('log-total-sessions').innerText = allLogs.length; el('log-avg-acc').innerText = Math.round((th/(th+tm))*100) + '%'; el('log-avg-apm').innerText = nr > 0 ? Math.round(ta/nr) : 0; 
@@ -1197,32 +1194,30 @@
   function deleteLog(id, pName) { 
       if(confirm("Supprimer ce log ?")) { 
           let p = appState.profiles[pName]; 
-          if(p) {
-              if(appState.trainingMode === 'NORMAL') p.logsNormal = p.logsNormal.filter(l => l.id !== id); 
-              else p.logsTryhard = p.logsTryhard.filter(l => l.id !== id); 
-              saveTrainingConfig(); saveApp(); renderLogs(); 
-          }
+          if(p) { p.logs = p.logs.filter(l => l.id !== id); saveTrainingConfig(); saveApp(); renderLogs(); }
       } 
   }
 
-  // --- INPUT BINDINGS ---
   function formatMouseEvent(e) { let k = []; if(e.ctrlKey) k.push('CTRL'); if(e.altKey) k.push('ALT'); if(e.shiftKey) k.push('SHIFT'); let btn = (e.button === 0) ? 'M1' : (e.button === 1) ? 'M3' : (e.button === 2) ? 'M2' : (e.button === 3) ? 'M4' : 'M5'; k.push(btn); return k.join('+'); }
   function formatKeyEvent(e) { if(['Control','Shift','Alt','Meta','CapsLock','Tab'].includes(e.key)) return null; let k = []; if(e.ctrlKey) k.push('CTRL'); if(e.altKey) k.push('ALT'); if(e.shiftKey) k.push('SHIFT'); let key = e.key.toUpperCase(); if(key === " ") key = "SPC"; k.push(key); return k.join('+'); }
 
   window.addEventListener('wheel', (e) => { 
       if(!isPlayMode && !listeningBoxId) return; e.preventDefault(); 
       let k = []; if(e.ctrlKey) k.push('CTRL'); if(e.altKey) k.push('ALT'); if(e.shiftKey) k.push('SHIFT'); k.push(e.deltaY < 0 ? 'WU' : 'WD'); let bind = k.join('+'); 
-      if(listeningBoxId) { let d = getBoxData(listeningBoxId); d.bind = bind; if(!boxStats[bind]) boxStats[bind] = {h: 0, m: 0}; applyBoxVisuals(el(listeningBoxId), d); el(listeningBoxId).classList.remove('listening'); listeningBoxId = null; saveApp(); } else if(isPlayMode) { if(isProcessingInput) return; handlePlayInput(bind); } 
+      if(listeningBoxId) { resolveBind(bind); } else if(isPlayMode) { if(isProcessingInput) return; handlePlayInput(bind); } 
   }, {passive: false});
   
   window.addEventListener('keydown', (e) => { 
       if(isPlayMode && e.key === 'Escape') { e.preventDefault(); togglePlayMode(); return; }
       simulateKeypress(formatKeyEvent(e));
       if(['Delete','Backspace'].includes(e.key) && !isPlayMode && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') { let s = els('.box.selected'); if(s.length > 0) { promptDelete(Array.from(s)); e.preventDefault(); return; } }
-      if(editingSpellBoxId && e.key === 'Escape') { closeSpellModal(); return; } 
       if(listeningBoxId || isPlayMode) { if(!['F5','F12'].includes(e.key)) e.preventDefault(); } 
+      
+      // V55 : Annuler le Quick-Bind avec Echap
+      if(isQuickBinding && e.key === 'Escape') { isQuickBinding = false; el(listeningBoxId).classList.remove('listening', 'quick-binding'); listeningBoxId = null; showToast("Saisie annulée"); return; }
+      
       let b = formatKeyEvent(e); if(!b) return; 
-      if(listeningBoxId && !isPlayMode) { let d = getBoxData(listeningBoxId); d.bind = b; if(!boxStats[b]) boxStats[b] = {h: 0, m: 0}; applyBoxVisuals(el(listeningBoxId), d); el(listeningBoxId).classList.remove('listening'); listeningBoxId = null; saveApp(); return; } 
+      if(listeningBoxId && !isPlayMode) { resolveBind(b); return; } 
       handlePlayInput(b); 
   }, {capture: true, passive: false});
   
