@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Entraîneur V51 - Édition Next-Gen</title>
+<style>
+    :root { 
+        --box-size: 40px; 
+        --font-scale: 1;
+        --pan-x: 0px;
+        --pan-y: 0px;
+        --elvui-toolbar: #11111b; 
+        --elvui-border: #000000; 
+        --elvui-case-bg: linear-gradient(180deg, #323232 0%, #1e1e1e 100%); 
+        --elvui-case-txt: #fdfdfd; 
+        --elvui-selected: #f9e2af; 
+        --elvui-bind-mode: #cba6f7;
+        --elvui-spell-mode: #fab387;
+        --elvui-active-target: #33d17a; 
+        --elvui-error: #f38ba8;
+        --elvui-castbar: #f9e2af;
+        --wow-yellow: #ffd100;
+    }
+
+    body { 
+        font-family: 'Open Sans', 'Arial', sans-serif; 
+        background: #0c0c0e; 
+        color: #bac2de; 
+        margin: 0; 
+        overflow: hidden; 
+        user-select: none; 
+    }
+  
+    /* --- BARRE D'OUTILS & CINEMATIQUE --- */
+    #toolbar { 
+        background: var(--elvui-toolbar); 
+        padding: 8px 12px; 
+        display: flex; 
+        gap: 8px; 
+        align-items: center; 
+        border-bottom: 1px solid var(--elvui-border); 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.5); 
+        position: relative; 
+        z-index: 1000; 
+        flex-wrap: wrap; 
+        min-height: 42px;
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    body.playing #toolbar { transform: translateY(-100%); }
+    body.playing .floating-panel { opacity: 0; pointer-events: none; }
+    
+    .separator { width: 1px; height: 20px; background: #313244; margin: 0 2px; }
+
+    button { 
+        padding: 6px 12px; 
+        font-size: 13px; 
+        cursor: pointer; 
+        background: #313244; 
+        color: #bac2de; 
+        border: 1px solid var(--elvui-border); 
+        transition: filter 0.1s; 
+        border-radius: 2px;
+    }
+    button:hover { filter: brightness(1.2); }
+    
+    .action-btn { background: #45475a; }
+    .success { background: #a6e3a1; color: #11111b; font-weight: bold; }
+    .danger { background: #f38ba8; color: #11111b; font-weight: bold; }
+    
+    .btn-info { 
+        background: transparent; border: 1px solid var(--wow-yellow); color: var(--wow-yellow); 
+        font-weight: bold; font-family: serif; font-size: 14px; border-radius: 50%; 
+        width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; padding: 0; 
+    }
+    .btn-info:hover { background: var(--wow-yellow); color: #11111b; }
+
+    .setting-group { 
+        display: flex; align-items: center; gap: 6px; font-size: 13px; 
+        background: #1e1e2e; padding: 4px 10px; border: 1px solid var(--elvui-border); border-radius: 2px;
+    }
+    .size-input { width: 35px; background: transparent; border: none; color: #a6e3a1; font-weight: bold; font-size: 13px; text-align: center; }
+    .select-input { background: transparent; border: none; color: #a6e3a1; font-weight: bold; font-size: 13px; cursor: pointer; outline: none; }
+
+    /* STATS FLOTTANTES POUR MODE CINEMATIQUE */
+    #stats { 
+        position: fixed; top: 10px; right: 20px; background: rgba(17,17,27,0.9); padding: 8px 20px; 
+        border-radius: 20px; z-index: 5000; border: 1px solid var(--elvui-border); display: none; 
+        gap: 15px; font-size: 14px; font-weight: bold; align-items: center; color: #bac2de; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+    }
+
+    /* --- DUALITÉ NORMAL / TRYHARD --- */
+    .switch-group { display: flex; background: #1e1e2e; border: 1px solid var(--elvui-border); border-radius: 4px; overflow: hidden; }
+    .switch-btn { padding: 4px 12px; font-weight: bold; border: none; background: transparent; border-radius: 0; }
+
+    body[data-training="NORMAL"] .tryhard-only { display: none !important; }
+    body[data-training="NORMAL"] .spell-info-badge { display: none !important; }
+    body[data-training="NORMAL"] .stack-counter { display: none !important; }
+    
+    body[data-training="NORMAL"] .box { border-color: var(--elvui-border) !important; box-shadow: none !important; animation: none !important; }
+    body[data-training="NORMAL"] .box.selected { border-color: #89b4fa !important; box-shadow: inset 0 0 10px rgba(137,180,250,0.5) !important; }
+    body[data-training="NORMAL"] .box.active-target { border-color: var(--elvui-active-target) !important; box-shadow: 0 0 15px var(--elvui-active-target) !important; }
+    
+    body[data-training="TRYHARD"] .normal-only { display: none !important; }
+
+    /* --- WORKSPACE, GRILLE & MOTEUR ABSOLU --- */
+    #workspace { 
+        position: relative; width: 100vw; height: calc(100vh - 42px); 
+        background-color: #0c0c0e; overflow: hidden; cursor: crosshair; 
+    }
+    #workspace.panning { cursor: grabbing !important; }
+    #workspace.show-drag-grid {
+        background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    }
+    
+    #board { position: absolute; top: 0; left: 0; width: 0; height: 0; transform-origin: 0 0; }
+    #ghost-container { position: absolute; top: 0; left: 0; width: 0; height: 0; z-index: 10;}
+    
+    #selection-lasso { 
+        position: absolute; border: 1px solid rgba(137, 180, 250, 0.8); background: rgba(137, 180, 250, 0.2); 
+        display: none; z-index: 500; pointer-events: none; 
+    }
+
+    /* --- HUD EN JEU --- */
+    #countdown { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; color: var(--wow-yellow); z-index: 9999; display: none; text-shadow: 0 0 30px rgba(255,209,0,0.5), 4px 4px 0 #000; font-weight: bold; font-family: monospace;}
+    
+    #global-castbar-wrapper { position: absolute; top: 30%; left: 50%; transform: translateX(-50%); width: 300px; display: none; flex-direction: column; gap: 2px; z-index: 500; pointer-events: none; }
+    #global-castbar-bg { width: 100%; height: 18px; background: #11111b; border: 1px solid var(--elvui-border); position: relative; }
+    #global-castbar-fill { height: 100%; width: 0%; background: var(--elvui-castbar); }
+    #global-castbar-text { position: absolute; top: 0; left: 5px; font-size: 11px; color: #11111b; font-weight: bold; line-height: 18px; }
+    
+    #resource-bar-wrapper { position: absolute; bottom: 25%; left: 50%; transform: translateX(-50%); width: 250px; height: 14px; background: #11111b; border: 1px solid var(--elvui-border); display: none; z-index: 500; pointer-events: none; box-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+    #resource-bar-fill { height: 100%; width: 0%; background: #f38ba8; transition: width 0.1s ease-out; }
+    #resource-bar-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; font-size: 10px; color: #fdfdfd; font-weight: bold; line-height: 14px; text-shadow: 1px 1px 0 #000; }
+
+    /* --- PANNEAUX (Z-INDEX SUPERIEUR) --- */
+    .floating-panel { position: absolute; top: 60px; background: rgba(17, 17, 27, 0.98); border: 1px solid var(--elvui-border); padding: 15px; z-index: 2000; display: none; flex-direction: column; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); border-radius: 4px; transition: opacity 0.3s;}
+    #settings-panel { right: 20px; width: 340px; }
+    #logs-panel { right: 380px; width: 500px; max-height: 70vh; overflow-y: auto; }
+    #spell-modal { position: absolute; background: #1e1e2e; border: 1px solid var(--elvui-spell-mode); padding: 15px; z-index: 2500; display: none; flex-direction: column; gap: 8px; width: 250px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
+    #grimoire-panel { left: 20px; width: 260px; max-height: 70vh; overflow-y: auto; }
+    
+    .panel-title { color: #89b4fa; font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 5px; border-bottom: 1px solid #313244; padding-bottom: 5px; }
+    .panel-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #bac2de; }
+    .panel-row input[type="number"], .panel-row input[type="text"] { width: 70px; background: #11111b; border: 1px solid #45475a; color: #a6e3a1; padding: 4px; text-align: center; font-weight: bold; border-radius: 2px;}
+    
+    .presets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
+    .presets-grid button { font-size: 11px; padding: 6px; background: #45475a; }
+    .presets-grid button.active-preset { background: var(--elvui-active-target); color: #11111b; font-weight: bold; box-shadow: inset 0 0 10px rgba(51, 209, 122, 0.4); }
+    
+    .log-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; }
+    .log-table th { background: #1e1e2e; padding: 6px; border-bottom: 2px solid #45475a; color: #89b4fa; }
+    .log-table td { padding: 6px; border-bottom: 1px solid #313244; }
+
+    /* --- CASES (BOXES) --- */
+    .box { position: absolute; width: var(--box-size); height: var(--box-size); border: 1px solid var(--elvui-border); display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--elvui-case-bg); cursor: pointer; box-sizing: border-box; pointer-events: auto; background-size: cover; background-position: center; transition: transform 0.05s, border-color 0.1s; }
+    .box-content { display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: none; width: 95%; z-index: 2; text-shadow: 1px 1px 2px #000; }
+    .box-mod { color: #a6adc8; font-size: calc(var(--box-size) * 0.18); line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .box-key { color: var(--elvui-case-txt); font-size: calc(var(--box-size) * 0.40); font-weight: bold; line-height: 1; }
+    
+    .box.pressed { transform: scale(0.85); filter: brightness(0.6); }
+    .box.selected { border-color: #89b4fa; box-shadow: inset 0 0 10px rgba(137,180,250,0.5); z-index: 50; }
+    .box.active-target { border-color: var(--elvui-active-target) !important; box-shadow: 0 0 15px var(--elvui-active-target) !important; z-index: 100; transform: scale(1.05); }
+    .drag-invalid { border-color: var(--elvui-error) !important; background: rgba(243, 139, 168, 0.4) !important; }
+    
+    .box.listening { border-color: var(--elvui-bind-mode) !important; box-shadow: 0 0 15px var(--elvui-bind-mode) !important; z-index: 150;}
+    .box.group-hover { box-shadow: 0 0 10px #89b4fa, inset 0 0 8px #89b4fa !important; border-color: #89b4fa !important; z-index: 45;}
+
+    .ghost-box { position: absolute; width: var(--box-size); height: var(--box-size); border: 2px dashed rgba(137, 180, 250, 0.5); background: rgba(137, 180, 250, 0.2); pointer-events: none; z-index: 40; display: none;}
+
+    /* TRYHARD OVERLAYS */
+    .spell-info-badge { position: absolute; top: 1px; left: 1px; right: 1px; display: flex; pointer-events: none; z-index: 5; }
+    .si-prio { color: var(--elvui-spell-mode); font-size: calc(var(--box-size) * 0.22); font-weight: bold; background: rgba(0,0,0,0.6); padding: 0 2px; border-radius: 2px; }
+    .stack-counter { position: absolute; bottom: 1px; right: 2px; font-size: calc(var(--box-size) * 0.35); font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; z-index: 25; pointer-events: none; }
+    
+    .box-cd-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.75); z-index: 20; display: flex; justify-content: center; align-items: center; pointer-events: none;}
+    .box-cd-text { color: #f9e2af; font-size: calc(var(--box-size) * 0.35); font-weight: bold; }
+    
+    .box-gcd-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 15; pointer-events: none; transform-origin: bottom; animation: gcdSweep linear forwards; }
+    @keyframes gcdSweep { 0% { transform: scaleY(1); } 100% { transform: scaleY(0); } }
+
+    .box.glowing { border-color: #f9e2af !important; box-shadow: 0 0 10px #f9e2af, inset 0 0 10px #f9e2af; z-index: 15; animation: pulse 1s infinite alternate; }
+    @keyframes pulse { 0% { filter: brightness(1); } 100% { filter: brightness(1.4); } }
+    .box.drag-over { border-color: var(--elvui-spell-mode) !important; box-shadow: inset 0 0 15px var(--elvui-spell-mode) !important; }
+
+    /* --- FCT, GAME FEEL & ARCADE --- */
+    .fct { position: absolute; top: 0; left: 50%; font-weight: bold; pointer-events: none; z-index: 500; white-space: nowrap; }
+    .fct.crit { color: var(--wow-yellow); font-size: calc(var(--box-size) * 0.6); animation: critUp 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 15px var(--wow-yellow), 2px 2px 0 #000; }
+    .fct.normal-hit { color: #a6e3a1; font-size: calc(var(--box-size) * 0.4); animation: floatUp 0.8s ease-out forwards; text-shadow: 1px 1px 2px #000;}
+    .fct.fall-miss { color: var(--elvui-error); font-size: calc(var(--box-size) * 0.5); animation: fallDown 1s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards; text-shadow: 1px 1px 2px #000;}
+    
+    @keyframes floatUp { 0% { top: 0; opacity: 1; transform: translateX(-50%) scale(1); } 100% { top: -40px; opacity: 0; transform: translateX(-50%) scale(1.2); } }
+    @keyframes critUp { 0% { top: 0; opacity: 1; transform: translateX(-50%) scale(1.5) rotate(-5deg); } 20% { transform: translateX(-50%) scale(1.2) rotate(5deg); } 100% { top: -60px; opacity: 0; transform: translateX(-50%) scale(1.5); } }
+    @keyframes fallDown { 0% { top: 0; opacity: 1; transform: translateX(-50%) scale(1); } 100% { top: 60px; opacity: 0; transform: translateX(-50%) scale(0.8) rotate(10deg); } }
+
+    .shake-miss { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; border-color: var(--elvui-error) !important; background: #451a23 !important;}
+    @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(3px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-5px, 0, 0); } 40%, 60% { transform: translate3d(5px, 0, 0); } }
+    
+    .pulse-hit { animation: pulseHit 0.3s ease-out; }
+    @keyframes pulseHit { 0% { transform: scale(0.8); filter: brightness(2); box-shadow: 0 0 20px #a6e3a1; } 100% { transform: scale(1); box-shadow: 0 0 0 transparent; } }
+
+    .particle { position: absolute; width: 5px; height: 5px; background: #a6e3a1; border-radius: 50%; pointer-events: none; z-index: 60; animation: particleOut 0.4s ease-out forwards; box-shadow: 0 0 5px #a6e3a1;}
+    @keyframes particleOut { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--vx), var(--vy)) scale(0); opacity: 0; } }
+
+    #combo-counter { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); font-size: 40px; font-weight: bold; color: #f9e2af; text-shadow: 2px 2px 0px #000; display: none; z-index: 500; pointer-events: none; transition: transform 0.1s; }
+    .combo-bump { transform: translateX(-50%) scale(1.3) !important; color: #a6e3a1 !important; }
+    .combo-break { transform: translateX(-50%) scale(0.8) !important; color: var(--elvui-error) !important; text-shadow: 0 0 15px var(--elvui-error) !important; }
+    .combo-milestone { animation: milestonePulse 0.5s ease-out; color: var(--wow-yellow) !important; text-shadow: 0 0 20px var(--wow-yellow), 2px 2px 0 #000 !important;}
+    @keyframes milestonePulse { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.6); } 100% { transform: translateX(-50%) scale(1); } }
+
+    #blind-prompt { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); font-size: 80px; font-weight: bold; color: var(--elvui-active-target); text-shadow: 0 0 20px rgba(51,209,122,0.5); display: none; z-index: 500; pointer-events: none; font-family: monospace; }
+    body[data-blind="true"] .box { opacity: 0.1 !important; border-color: transparent !important; background: transparent !important; }
+    body[data-blind="true"] .box.active-target { opacity: 0 !important; }
+
+    .rhythm-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,0.6); border-radius: 50%; pointer-events: none; animation: shrink linear forwards; z-index: 5; }
+    @keyframes shrink { from { width: 300%; height: 300%; opacity: 0.8; } to { width: 100%; height: 100%; opacity: 0; } }
+
+    /* --- CORBEILLE INTERACTIVE --- */
+    #trash-zone { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: rgba(243, 139, 168, 0.9); color: #11111b; padding: 15px 50px; border-radius: 10px 10px 0 0; font-size: 24px; font-weight: bold; transition: all 0.2s; z-index: 9000; display: flex; justify-content: center; align-items: center; box-shadow: 0 -4px 15px rgba(0,0,0,0.5);}
+    #trash-zone.active { bottom: 0; }
+    #trash-zone.hover { background: #f38ba8; padding: 25px 60px; font-size: 28px; }
+
+    /* --- TOAST AUTOSAVE --- */
+    #toast { position: fixed; bottom: 20px; right: 20px; background: rgba(51, 209, 122, 0.9); color: #11111b; padding: 8px 16px; border-radius: 4px; font-weight: bold; opacity: 0; transition: opacity 0.3s; z-index: 10000; pointer-events: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5);}
+
+    /* --- ANNOTATIONS ET INFOS --- */
+    #instructions { position: absolute; bottom: 15px; left: 15px; background: rgba(17, 17, 27, 0.95); padding: 12px 16px; border: 1px solid var(--elvui-border); border-left: 4px solid #89b4fa; font-size: 13px; color: #bac2de; pointer-events: none; z-index: 100; transition: opacity 0.5s;}
+    
+    #credit-footer { position: absolute; bottom: 15px; right: 15px; text-align: right; font-size: 11px; color: #6c7086; z-index: 100; transition: color 0.2s, opacity 0.5s; text-shadow: 1px 1px 0px #000; cursor: pointer; pointer-events: auto;}
+    #credit-footer:hover { color: #bac2de; }
+    #credit-footer b { color: #a6adc8; }
+    
+    body.playing #instructions, body.playing #credit-footer { opacity: 0; pointer-events: none; }
+
+    /* --- WELCOME MODAL --- */
+    #welcome-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e1e2e; border: 2px solid var(--wow-yellow); padding: 30px; z-index: 10000; text-align: center; border-radius: 8px; color: #bac2de; display: none; width: 450px; box-shadow: 0 0 50px rgba(0,0,0,0.9); }
+    #welcome-modal h1 { color: var(--wow-yellow); margin-top: 0; font-size: 22px; text-shadow: 1px 1px 0 #000; }
+    #welcome-modal p { font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
+    #welcome-modal .credits { font-size: 12px; color: #a6adc8; border-top: 1px solid #45475a; padding-top: 15px; margin-bottom: 20px; line-height: 1.8;}
+
+    /* --- TUTORIEL SPOTLIGHT --- */
+    #spotlight-hole { position: fixed; border-radius: 4px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.85); pointer-events: none; z-index: 9998; display: none; border: 2px solid var(--wow-yellow); transition: all 0.3s ease; }
+    #tut-tooltip { position: fixed; background: rgba(17, 17, 27, 0.98); border: 2px solid var(--wow-yellow); box-shadow: 0 4px 20px rgba(0,0,0,0.9); z-index: 9999; padding: 20px; width: 300px; color: #bac2de; display: none; flex-direction: column; gap: 15px; border-radius: 4px; transition: all 0.3s ease; }
+    .tut-title { color: var(--wow-yellow); font-size: 18px; font-weight: bold; border-bottom: 1px solid #45475a; padding-bottom: 8px; text-shadow: 1px 1px 0 #000; margin: 0; }
+    .tut-text { font-size: 14px; line-height: 1.5; }
+    .tut-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; }
+    .tut-dots { display: flex; gap: 5px; }
+    .tut-dot { width: 10px; height: 10px; border-radius: 50%; background: #45475a; }
+    .tut-dot.active { background: var(--wow-yellow); box-shadow: 0 0 5px var(--wow-yellow); }
+    .btn-tut { background: var(--wow-yellow); color: #11111b; border: none; padding: 6px 14px; font-weight: bold; cursor: pointer; border-radius: 2px; }
+    .btn-tut:hover { filter: brightness(1.2); }
+
+    /* --- SCORE MODAL --- */
+    #score-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e1e2e; border: 2px solid #89b4fa; padding: 25px; z-index: 9999; text-align: center; border-radius: 8px; color: #bac2de; display: none; min-width: 250px; box-shadow: 0 0 40px rgba(0,0,0,0.9); }
+    .score-acc { font-size: 32px; font-weight: bold; margin: 15px 0; color: #a6e3a1; text-shadow: 1px 1px 0 #000; }
+
+    /* GRIMOIRE ITEMS */
+    .spell-item { background: #313244; border: 1px solid #45475a; padding: 5px; margin-bottom: 5px; cursor: grab; display: flex; align-items: center; gap: 8px; font-size: 12px; border-radius: 2px;}
+    .spell-item:active { cursor: grabbing; }
+    .spell-icon-preview { width: 24px; height: 24px; background: #11111b; border: 1px solid #000; background-size: cover; background-position: center; }
+</style>
+</head>
+<body data-mode="MOVE" data-training="NORMAL">
+
+  <div id="welcome-modal">
+      <h1>Bienvenue sur l'Entraîneur !</h1>
+      <p>Ce simulateur a été conçu pour vous aider à forger votre mémoire musculaire de manière intuitive et efficace, avec une esthétique inspirée de l'interface <b>ElvUI</b>.</p>
+      <p>Alternez entre le mode <b>Normal</b> (vitesse pure) et le mode <b>Tryhard</b> (mécaniques de World of Warcraft avec GCD et ressources) pour parfaire votre rotation.</p>
+      <div class="credits">
+          Créé par <b>Kiipey</b><br>
+          Discord : Kiipey | BattleTag : Kiipey#21663<br>
+          <i>Projet Open Source (Licence MIT)</i>
+      </div>
+      <button class="success" style="width:100%; font-size:16px; padding:10px;" onclick="closeWelcomeModal()">Fermer</button>
+  </div>
+
+  <div id="spotlight-hole"></div>
+  <div id="tut-tooltip">
+      <div class="tut-title" id="tut-title">Titre</div>
+      <div class="tut-text" id="tut-text">Texte</div>
+      <div class="tut-footer">
+          <button class="btn-tut" style="background:transparent; color:#a6adc8; border:1px solid #45475a;" onclick="closeTutorial()">Fermer</button>
+          <div class="tut-dots" id="tut-dots"></div>
+          <button class="btn-tut" id="tut-btn-next" onclick="nextTutorialStep()">Suivant</button>
+      </div>
+  </div>
+  
+  <div id="toast">💾 Profil sauvegardé</div>
+  <div id="trash-zone">🗑️ Glisser ici pour supprimer</div>
+  <div id="countdown">3</div>
+
+  <div id="score-modal">
+      <h2 style="color:#89b4fa; margin-top:0;">Session Terminée !</h2>
+      <div class="score-acc" id="sm-acc">100%</div>
+      <div style="font-size:14px; line-height:1.8; margin-bottom:20px;">
+          APM : <b id="sm-apm" style="color:#89b4fa;">0</b><br>
+          Réaction moy. : <b id="sm-react" style="color:#f9e2af;">0 ms</b><br>
+          Max Combo : <b id="sm-combo" style="color:#cba6f7;">0</b><br>
+          Touches : <b id="sm-hits" style="color:#a6e3a1;">0</b> / Fautes : <b id="sm-misses" style="color:#f38ba8;">0</b>
+      </div>
+      <button style="width:100%; background: #89b4fa; color: #11111b; font-weight: bold; border:none; padding:8px; cursor:pointer;" onclick="closeScore()">Continuer</button>
+  </div>
+
+  <div id="stats">
+      <span id="timerVal" class="normal-only" style="color:#cba6f7; display:none; margin-right:8px;">0s</span> 
+      Réussites: <span id="hitsVal" style="color: #33d17a;">0</span> | 
+      Fautes: <span id="missesVal" style="color: #f38ba8;">0</span> | 
+      <span id="reactVal" style="color: #f9e2af;">- ms</span> | 
+      APM: <span id="apmVal" style="color: #89b4fa;">0</span>
+  </div>
+
+  <div id="toolbar">
+    <button class="btn-info" onclick="triggerInfoTutorial()" title="Guide d'utilisation">i</button>
+    
+    <div id="tut-target-build" class="toolbar-group">
+        <button onclick="addBox()" class="action-btn">+ Case</button>
+    </div>
+    
+    <div class="separator"></div>
+    <div id="tut-target-liaison">
+        <button onclick="groupSelected()" class="action-btn" title="Sélectionnez plusieurs cases au lasso pour les lier">🔗 Lier</button>
+        <button onclick="ungroupSelected()" class="action-btn">🔓 Délier</button>
+    </div>
+    
+    <div class="separator"></div>
+    <div class="setting-group" id="tut-target-taille">
+      Taille:<input type="range" id="sizeSlider" min="20" max="150" value="40" oninput="updateSizeFromSlider()">
+      <input type="number" id="sizeInput" class="size-input" value="40" onchange="updateSizeFromInput()">
+    </div>
+    <div class="setting-group" id="tut-target-aimantation">
+      Aimantation:
+      <select id="snapDivisor" class="select-input" onchange="saveSettings()">
+        <option value="1">Grille Stricte</option>
+        <option value="2">Souple</option>
+        <option value="5">Très Souple</option>
+        <option value="20">Libre</option>
+      </select>
+    </div>
+    
+    <div class="separator"></div>
+    
+    <div id="tut-target-mode" class="switch-group">
+        <button id="btnModeNormal" class="switch-btn" onclick="setTrainingMode('NORMAL')" style="background: #a6e3a1; color: #11111b;">Normal</button>
+        <button id="btnModeTryhard" class="switch-btn" onclick="setTrainingMode('TRYHARD')" style="color: #bac2de;">Tryhard</button>
+    </div>
+
+    <button onclick="toggleHeatmap()" id="btnHeatmap" class="action-btn tryhard-only" style="color: #f38ba8; margin-left: 8px;">🔥 Heatmap</button>
+    <button onclick="toggleGrimoire()" id="btnGrimoire" class="action-btn tryhard-only" style="color: var(--elvui-spell-mode);">📖 Grimoire</button>
+
+    <div class="separator"></div>
+    <div id="tut-target-fin">
+        <button onclick="toggleLogsPanel()" class="action-btn">📊 Logs</button>
+        <button onclick="toggleSettingsPanel()" id="btnSettings" class="action-btn" style="color:#a6e3a1;">⚙️ Options</button>
+        <button onclick="togglePlayMode()" id="modeBtn" class="success">▶ Lancer</button>
+    </div>
+  </div>
+
+  <div id="settings-panel" class="floating-panel">
+    <div class="panel-title">Profil & Sauvegarde</div>
+    <div class="panel-row" id="tut-target-profils">
+        <select id="profile-selector" class="select-input" style="width: 100px; border: 1px solid #45475a;" onchange="loadProfile()"></select>
+        <div>
+            <button onclick="createProfile()" style="padding:2px 6px;">Nouv</button> 
+            <button onclick="renameProfile()" style="padding:2px 6px; color:#f9e2af;" title="Renommer">✎</button>
+            <button onclick="deleteProfile()" style="padding:2px 6px; color:#f38ba8;">Sup</button>
+        </div>
+    </div>
+    <div class="presets-grid">
+        <button onclick="exportProfile()" style="color:#a6e3a1;">💾 Exporter Profil</button>
+        <button onclick="importProfile()" style="color:#f9e2af;">📂 Importer Profil</button>
+    </div>
+    
+    <div class="panel-title" style="margin-top:10px;">Général</div>
+    <div class="panel-row"><label>🔊 Sons</label><input type="checkbox" id="cfgSound" checked onchange="saveTrainingConfig()"></div>
+    <div class="panel-row"><label>Police (%)</label><input type="number" id="cfgFontScale" value="100" onchange="applyFontScale()"></div>
+    <div class="panel-row"><label>Sauver Logs</label><input type="checkbox" id="cfgSaveLogs" checked onchange="saveTrainingConfig()"></div>
+    
+    <div class="panel-title normal-only" style="margin-top:10px;">Options Arcade (Normal)</div>
+    <div class="panel-row normal-only"><label>Sprint ⏱️</label>
+        <select id="cfgSprint" class="select-input" style="border:1px solid #45475a;" onchange="saveTrainingConfig()">
+            <option value="0">Infini</option><option value="30">30s</option><option value="60">60s</option><option value="120">2 min</option>
+        </select>
+    </div>
+    <div class="panel-row normal-only"><label>Anneau de rythme ⭕</label><input type="checkbox" id="cfgRhythm" onchange="saveTrainingConfig()"></div>
+    <div class="panel-row normal-only" title="Cache vos barres, affiche les touches au centre"><label style="color:#f38ba8;">Mode Aveugle 🙈</label><input type="checkbox" id="cfgBlind" onchange="saveTrainingConfig()"></div>
+    
+    <div class="panel-title tryhard-only" style="margin-top:10px;">Simulateur (Tryhard)</div>
+    <div class="panel-row tryhard-only" style="background: rgba(250, 179, 135, 0.1); padding: 5px; border: 1px solid var(--elvui-spell-mode);">
+        <label>Activer Rotation</label><input type="checkbox" id="cfgRotation" onchange="saveTrainingConfig()">
+    </div>
+    <div class="panel-row tryhard-only"><label>GCD (ms)</label><input type="number" id="cfgGcd" value="1500" onchange="saveTrainingConfig()"></div>
+    <div class="panel-row tryhard-only"><label>Max Ressource</label><input type="number" id="cfgMaxResource" value="100" onchange="saveTrainingConfig()"></div>
+
+    <div class="panel-title" style="margin-top:10px;">Vitesse d'Apparition</div>
+    <div class="panel-row" id="tut-target-speed"><label>Délai max (ms)</label><input type="number" id="cfgStartSpeed" value="1000" onchange="customConfigChanged()"></div>
+    <div class="panel-row"><label>Accélération (ms)</label><input type="number" id="cfgStep" value="20" onchange="customConfigChanged()"></div>
+    <div class="panel-row"><label>Temps limite (ms)</label><input type="number" id="cfgTimeout" value="2000" onchange="customConfigChanged()"></div>
+    
+    <div class="presets-grid" id="presets-container">
+        <button id="pre-deb" class="preset-btn" onclick="setDifficulty(1500,0,3000,this)">Débutant (60)</button>
+        <button id="pre-int" class="preset-btn" onclick="setDifficulty(800,10,1500,this)">Inter (120)</button>
+        <button id="pre-con" class="preset-btn" onclick="setDifficulty(500,10,1000,this)">Confirmé (180)</button>
+        <button id="pre-exp" class="preset-btn" onclick="setDifficulty(350,5,800,this)">Expert (240)</button>
+        <button id="pre-pro" class="preset-btn" style="grid-column: span 2;" onclick="setDifficulty(200,0,600,this)">Pro (300+)</button>
+    </div>
+
+    <button onclick="resetWholeInterface()" style="margin-top: 15px; background: #f38ba8; color: #11111b; font-weight: bold; border:none; padding:8px;">🧨 Reset Interface (Garde les touches)</button>
+    <button onclick="toggleSettingsPanel()" style="margin-top: 5px; border:none; padding:8px;">Fermer</button>
+  </div>
+
+  <div id="logs-panel" class="floating-panel">
+    <div class="panel-title">Historique <span id="log-mode-label" style="color:#a6e3a1;">(Normal)</span></div>
+    <div id="log-summary" style="font-size:11px; text-align:center; margin-bottom:10px; background:#313244; padding:5px; border-radius:2px;">
+        Sessions: <span id="log-total-sessions" style="color:#f9e2af; font-weight:bold;">0</span> | 
+        Précision: <span id="log-avg-acc" style="color:#a6e3a1; font-weight:bold;">0%</span> | 
+        APM: <span id="log-avg-apm" style="color:#89b4fa; font-weight:bold;">0</span>
+    </div>
+    <table class="log-table" id="logs-table">
+      <thead><tr><th>Date</th><th>Profil</th><th>Tch</th><th>Err</th><th>Acc</th><th>APM</th><th>🗑️</th></tr></thead>
+      <tbody id="logs-tbody"></tbody>
+    </table>
+  </div>
+
+  <div id="grimoire-panel" class="floating-panel tryhard-only">
+      <div class="panel-title">📖 Grimoire</div>
+      <div class="spell-item" draggable="true" ondragstart="event.dataTransfer.setData('text/plain', 'ERASER')" style="background: #451a23; border-color: var(--elvui-error); justify-content: center; font-weight: bold; color: var(--elvui-error); margin-bottom: 10px; padding: 8px;">🧽 Gomme / Oublier</div>
+      <div id="spell-list" style="display:flex; flex-direction:column; gap:5px; margin-bottom:10px;"></div>
+      <button onclick="createGrimoireSpell()" style="background: var(--elvui-spell-mode); color:#11111b; font-weight:bold; border:none; padding:6px;">+ Nouveau Sort</button>
+      <button onclick="toggleGrimoire()" style="margin-top: 5px; border:none; padding:6px;">Fermer</button>
+  </div>
+
+  <div id="spell-modal" class="floating-panel tryhard-only">
+    <div class="panel-title" style="color: var(--elvui-spell-mode);">Propriétés Sort</div>
+    <div class="panel-row"><label>Nom</label><input type="text" id="spell-name" style="width: 90px;"></div>
+    <div class="panel-row"><label>Couleur</label><input type="text" id="spell-color" style="width: 90px;" placeholder="#ff0000"></div>
+    <div class="panel-row"><label>Icône URL</label><input type="text" id="spell-icon" style="width: 90px;"></div>
+    <div class="panel-row" title="1 = Priorité max. 0 = Filler sans prio"><label>Prio (1=Max)</label><input type="number" id="spell-priority"></div>
+    <div class="panel-row"><label>Cast (ms)</label><input type="number" id="spell-cast"></div>
+    <div class="panel-row"><label>CD (ms)</label><input type="number" id="spell-cd"></div>
+    <div class="panel-row" title="Nombre positif = Génère. Négatif = Coûte."><label>Ressource</label><input type="number" id="spell-resource" placeholder="+10 ou -30"></div>
+    <div class="panel-row"><label>Charges</label><input type="number" id="spell-charges" value="1" min="1"></div>
+    <div class="panel-row"><label>% Proc</label><input type="number" id="spell-proc" min="0" max="100"></div>
+    <div class="panel-row"><label>Off-GCD ?</label><input type="checkbox" id="spell-offgcd"></div>
+    <div class="panel-row"><label>Interrupt ?</label><input type="checkbox" id="spell-interrupt"></div>
+    <div style="display: flex; gap: 5px; margin-top: 10px;">
+        <button onclick="saveSpellProperties()" style="flex:1; background: var(--elvui-spell-mode); color: #11111b; font-weight:bold; border:none; padding:6px;">Appliquer</button>
+        <button onclick="closeSpellModal()" style="flex:1; background: #45475a; color: #bac2de; font-weight:bold; border:none; padding:6px;">Fermer</button>
+    </div>
+  </div>
+
+  <div id="workspace">
+    <div class="grid-bg"></div>
+    <div id="combo-counter">0 Combo</div>
+    <div id="blind-prompt"></div>
+
+    <div id="resource-bar-wrapper" class="tryhard-only">
+        <div id="resource-bar-fill"></div>
+        <div id="resource-bar-text">0 / 100</div>
+    </div>
+    <div id="global-castbar-wrapper" class="tryhard-only">
+        <div id="global-castbar-bg"><div id="global-castbar-fill"></div><div id="global-castbar-text">Cast...</div></div>
+    </div>
+    
+    <div id="board">
+        <div id="ghost-container"></div>
+    </div>
+    <div id="selection-lasso"></div>
+  </div>
+
+  <div id="instructions"><span id="inst-text">💡 <b>OUTILS</b> : 🖱️ Clic/Lasso = Sélection. <b>Clic Droit + Glisser</b> = Caméra. <b>Double-Clic sur une case</b> = Assigner une touche / un sort. <b>Glisser en bas</b> = 🗑️ Supprimer.</span></div>
+
+  <div id="credit-footer" onclick="document.getElementById('welcome-modal').style.display = 'block'" title="Voir les crédits">
+      Créé par <b>Kiipey</b><br>
+      Discord: Kiipey | Bnet: Kiipey#21663<br>
+      <i>Outil Open Source</i>
+  </div>
+
+<script>
+  // ==========================================
+  // --- 1. UTILS, AUDIO SPATIAL & PARTICULES ---
+  // ==========================================
+  const el = id => document.getElementById(id);
+  const els = sel => document.querySelectorAll(sel);
+  
+  const AudioContext = window.AudioContext || window.webkitAudioContext; 
+  let audioCtx, globalPanner;
+  
+  function initAudio() { 
+      if(!audioCtx) {
+          audioCtx = new AudioContext(); 
+          globalPanner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+          if(globalPanner) globalPanner.connect(audioCtx.destination);
+      }
+      if(audioCtx.state === 'suspended') audioCtx.resume(); 
+  }
+  
+  function playTone(type, boxId) {
+      if (!el('cfgSound').checked) return; 
+      initAudio(); 
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); 
+      let dest = audioCtx.destination;
+      
+      if(globalPanner && boxId) {
+          let d = getBoxData(boxId);
+          if(d) {
+              let screenX = d.px + panX + parseInt(getComputedStyle(document.documentElement).getPropertyValue('--box-size'))/2;
+              let panVal = (screenX / window.innerWidth) * 2 - 1;
+              globalPanner.pan.value = Math.max(-1, Math.min(1, panVal));
+              dest = globalPanner;
+          }
+      }
+      
+      osc.connect(gain); gain.connect(dest);
+      
+      if (type === 'hit') { 
+          osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); 
+          gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1); 
+          osc.start(); osc.stop(audioCtx.currentTime + 0.1); 
+      } else { 
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); 
+          gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2); 
+          osc.start(); osc.stop(audioCtx.currentTime + 0.2); 
+      }
+  }
+  
+  function playMilestoneSound(combo) {
+      if (!el('cfgSound').checked) return; 
+      initAudio(); 
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); 
+      if(globalPanner) globalPanner.pan.value = 0; // Centre pour le milestone
+      osc.connect(gain); gain.connect(globalPanner || audioCtx.destination);
+      
+      let freq = 440 * Math.pow(1.05, combo/10); 
+      osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); 
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + 0.4);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4); 
+      osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+  }
+
+  function createParticles(boxEl) {
+      for(let i=0; i<6; i++) {
+          let p = document.createElement('div');
+          p.className = 'particle';
+          let angle = Math.random() * Math.PI * 2;
+          let dist = 25 + Math.random() * 25;
+          p.style.setProperty('--vx', Math.cos(angle)*dist + 'px');
+          p.style.setProperty('--vy', Math.sin(angle)*dist + 'px');
+          p.style.left = '50%'; p.style.top = '50%';
+          boxEl.appendChild(p);
+          setTimeout(() => { if(p.parentNode) p.remove() }, 400);
+      }
+  }
+
+  let toastTimeout;
+  function showToast(msg) {
+      const t = el('toast'); t.innerText = msg; t.style.opacity = 1;
+      clearTimeout(toastTimeout); toastTimeout = setTimeout(() => t.style.opacity = 0, 1500);
+  }
+
+  // ==========================================
+  // --- 2. ETAT GLOBAL & VARIABLES ---
+  // ==========================================
+  let appState = { trainingMode: 'NORMAL', profiles: {}, currentProfile: 'Défaut', grimoire: [] };
+  let boxesData = []; let boxStats = {}; let customScenarios = [];
+  
+  let boxCounter = 1, groupCounter = 1;
+  let isPlayMode = false, listeningBoxId = null, editingSpellBoxId = null, hoveredBoxId = null;
+  let showHeatmap = false;
+  
+  let panX = 0, panY = 0, isPanning = false, panStartX = 0, panStartY = 0;
+  let isDraggingBox = false, isLassoing = false, dragGroupInfo = [], startX = 0, startY = 0;
+  
+  let activeTargetId = null, startTime = 0, playSessionStart = 0;
+  let hits = 0, misses = 0, totalReactTime = 0;
+  let currentDelay = 1000, spawnTimeoutId, failTimeoutId, countdownTimerId = null;
+  let isProcessingInput = false, inputDebounceTimer = null;
+  let currentResource = 0, currentCombo = 0, maxCombo = 0, sprintTimerId = null;
+  let isPlayerCasting = false, isGlobalCooldown = false, currentCastInterruptible = false, castFinishTimeoutId = null;
+
+  // ==========================================
+  // --- 3. TUTORIEL SEQUENCÉ V51 ---
+  // ==========================================
+  const tutorials = {
+      NORMAL: [
+          { target: 'tut-target-build', title: "1. L'Édition", text: "Créez vos cases avec <b>+ Case</b>. Déplacez-les librement ou sélectionnez-les au lasso. <br><br>💡 <b>Astuce Pro</b> : Double-cliquez sur une case pour lui assigner un raccourci clavier !" },
+          { target: 'tut-target-liaison', title: "2. Les Barres", text: "Sélectionnez un groupe de cases et cliquez sur <b>🔗 Lier</b> pour les déplacer toutes ensemble comme une vraie barre d'actions." },
+          { target: 'tut-target-taille', title: "3. La Grille", text: "Ajustez la taille de vos cases. <br><br>Gérez l'<b>Aimantation</b> pour aligner vos touches parfaitement. Les cases feront apparaître une grille fantôme en les déplaçant !" },
+          { target: 'tut-target-mode', title: "4. La Dualité", text: "Le mode <b>Normal</b> entraîne la vitesse pure et la mémoire spatiale.<br><br>Le mode <b>Tryhard</b> débloquera le simulateur de World of Warcraft." },
+          { target: 'tut-target-fin', title: "5. À vous de jouer", text: "Ouvrez les <b>⚙️ Options</b> pour gérer votre vitesse et vos sauvegardes, ou cliquez directement sur <b>▶ Lancer</b> pour démarrer la session !" }
+      ],
+      TRYHARD: [
+          { target: 'btnGrimoire', title: "1. Le Grimoire", text: "Créez vos sorts avec leurs vraies stats (Cast, CD, Ressources).<br>Faites un <b>Glisser-Déposer</b> du Grimoire vers une case." },
+          { target: 'tut-target-build', title: "2. La Logique", text: "Faites un <b>Double-Clic</b> sur une case pour modifier sa Priorité. L'outil vous proposera intelligemment le sort avec la plus haute priorité disponible au combat." },
+          { target: 'btnHeatmap', title: "3. L'Analytique", text: "Activez la <b>🔥 Heatmap</b> après une session. Vos cases se coloreront du Vert au Rouge pour indiquer vos lacunes exactes." }
+      ],
+      OPTIONS: [
+          { target: 'settings-panel', title: "L'Atelier ⚙️", text: "Bienvenue dans les options ! C'est ici que vous allez pouvoir forger votre entraînement sur-mesure." },
+          { target: 'tut-target-profils', title: "Vos Profils 💾", text: "Sauvegardez vos différentes configurations d'interface. Vous pouvez même échanger vos profils avec vos amis via les boutons Importer/Exporter !" },
+          { target: 'tut-target-speed', title: "Le Rythme ⏱️", text: "Contrôlez la <b>vitesse d'apparition</b> des touches (en millisecondes) et le <b>temps limite</b> dont vous disposez pour réagir." },
+          { target: 'presets-container', title: "Les Presets 🚀", text: "Pas envie de vous embêter avec les chiffres ? Cliquez sur l'une de ces difficultés prédéfinies pour commencer l'entraînement immédiatement !" }
+      ]
+  };
+  
+  let currentTutStep = 0, activeTutType = '';
+  
+  function triggerInfoTutorial() {
+      if (el('settings-panel').style.display === 'flex') launchTutorial('OPTIONS', true);
+      else launchTutorial(appState.trainingMode, true);
+  }
+  
+  function launchTutorial(type, force = false) { 
+      if (!force && localStorage.getItem('wow_elvui_tut51_' + type)) return; 
+      if (type !== 'OPTIONS') el('settings-panel').style.display = 'none';
+      if (type !== 'TRYHARD' || type === 'NORMAL') if(el('grimoire-panel')) el('grimoire-panel').style.display = 'none';
+      el('logs-panel').style.display = 'none'; closeSpellModal();
+      
+      activeTutType = type; currentTutStep = 0; 
+      el('tut-tooltip').style.display = 'flex'; el('spotlight-hole').style.display = 'block';
+      renderTutorialStep(); 
+  }
+
+  function closeWelcomeModal() {
+      el('welcome-modal').style.display = 'none';
+      if (!localStorage.getItem('wow_elvui_tut51_' + appState.trainingMode)) {
+          launchTutorial(appState.trainingMode, false);
+      }
+  }
+  
+  function renderTutorialStep() { 
+      const stepData = tutorials[activeTutType][currentTutStep]; 
+      el('tut-title').innerHTML = stepData.title; el('tut-text').innerHTML = stepData.text; 
+      
+      const dc = el('tut-dots'); dc.innerHTML = ''; 
+      for(let i=0; i<tutorials[activeTutType].length; i++) { 
+          let dot = document.createElement('div'); dot.className = 'tut-dot' + (i === currentTutStep ? ' active' : ''); dc.appendChild(dot); 
+      } 
+      
+      const bn = el('tut-btn-next'); 
+      if(currentTutStep === tutorials[activeTutType].length - 1) bn.innerText = "Compris ! ✔️"; else bn.innerText = "Suivant ➔"; 
+      
+      const targetEl = el(stepData.target);
+      if(targetEl) {
+          const rect = targetEl.getBoundingClientRect(); const spot = el('spotlight-hole'); const pad = 6;
+          spot.style.left = (rect.left - pad) + 'px'; spot.style.top = (rect.top - pad) + 'px';
+          spot.style.width = (rect.width + pad*2) + 'px'; spot.style.height = (rect.height + pad*2) + 'px';
+          
+          const tip = el('tut-tooltip'); tip.style.display = 'flex'; const tipRect = tip.getBoundingClientRect();
+          let tLeft = rect.left; if(tLeft + tipRect.width > window.innerWidth) tLeft = window.innerWidth - tipRect.width - 15;
+          let tTop = rect.bottom + pad + 15;
+          if (tTop + tipRect.height > window.innerHeight) tTop = Math.max(10, rect.top - pad - tipRect.height - 15); 
+          tip.style.left = tLeft + 'px'; tip.style.top = tTop + 'px';
+      }
+  }
+  
+  function nextTutorialStep() { 
+      if(currentTutStep < tutorials[activeTutType].length - 1) { currentTutStep++; renderTutorialStep(); } 
+      else closeTutorial(); 
+  }
+  
+  function closeTutorial() { 
+      el('tut-tooltip').style.display = 'none'; el('spotlight-hole').style.display = 'none'; 
+      localStorage.setItem('wow_elvui_tut51_' + activeTutType, 'true'); 
+  }
+
+  // ==========================================
+  // --- 4. INITIALISATION ---
+  // ==========================================
+  function initApp() {
+      let isFirstLaunch = false;
+      let s = localStorage.getItem('wow_elvui_trainer_v48') || localStorage.getItem('wow_elvui_trainer_v46');
+      if (s) { appState = JSON.parse(s); }
+      
+      if (!appState.profiles || Object.keys(appState.profiles).length === 0) { 
+          appState.profiles = { 'Défaut': { boxes: [], logsNormal: [], logsTryhard: [] } }; 
+          isFirstLaunch = true;
+      }
+      if (!appState.grimoire) appState.grimoire = []; 
+      if (!appState.trainingMode) appState.trainingMode = 'NORMAL';
+      
+      loadProfile(appState.currentProfile);
+      
+      updateProfileDropdown(); loadTrainingConfig(); loadSettings(); renderGrimoire(); 
+      setTrainingMode(appState.trainingMode, true); 
+      setMode('MOVE'); 
+      
+      if(isFirstLaunch) {
+          generateDefaultLayout();
+          el('welcome-modal').style.display = 'block';
+      } else {
+          launchTutorial(appState.trainingMode, false);
+      }
+  }
+  
+  function saveApp() { 
+      if(isPlayMode) return; 
+      appState.profiles[appState.currentProfile].boxes = boxesData; 
+      appState.profiles[appState.currentProfile].camX = panX;
+      appState.profiles[appState.currentProfile].camY = panY;
+      localStorage.setItem('wow_elvui_trainer_v48', JSON.stringify(appState)); 
+      showToast("💾 Profil sauvegardé");
+  }
+
+  function setTrainingMode(mode, isInit = false) {
+      if(isPlayMode) return; 
+      appState.trainingMode = mode; 
+      document.body.setAttribute('data-training', mode);
+      
+      const bN = el('btnModeNormal'), bT = el('btnModeTryhard');
+      if(mode === 'NORMAL') { 
+          bN.style.background = '#a6e3a1'; bN.style.color = '#11111b'; bN.style.fontWeight = 'bold'; 
+          bT.style.background = 'transparent'; bT.style.color = '#bac2de'; bT.style.fontWeight = 'normal'; 
+      } else { 
+          bN.style.background = 'transparent'; bN.style.color = '#bac2de'; bN.style.fontWeight = 'normal'; 
+          bT.style.background = '#f38ba8'; bT.style.color = '#11111b'; bT.style.fontWeight = 'bold'; 
+      }
+      
+      showHeatmap = false; el('btnHeatmap').style.fontWeight = 'normal';
+      
+      if(!isInit) saveApp(); renderLogs(); 
+      boxesData.forEach(d => applyBoxVisuals(el(d.id), d)); 
+      
+      if(!isInit) launchTutorial(mode, false);
+  }
+
+  // ==========================================
+  // --- 5. GESTION DES PROFILS ---
+  // ==========================================
+  function updateProfileDropdown() { 
+      const sel = el('profile-selector'); sel.innerHTML = ''; 
+      Object.keys(appState.profiles).forEach(k => { 
+          const opt = document.createElement('option'); opt.value = k; opt.innerText = k; 
+          if(k === appState.currentProfile) opt.selected = true; 
+          sel.appendChild(opt); 
+      }); 
+  }
+  
+  function createProfile() { 
+      const n = prompt("Nom du nouveau profil :"); if(!n || appState.profiles[n]) return; 
+      appState.profiles[n] = { boxes: [], logsNormal: [], logsTryhard: [] }; appState.currentProfile = n; 
+      updateProfileDropdown(); loadProfile(n); 
+  }
+
+  function renameProfile() {
+      if(appState.currentProfile === 'Défaut') return alert("Le profil par défaut ne peut pas être renommé.");
+      let n = prompt("Nouveau nom :", appState.currentProfile);
+      if(!n || appState.profiles[n] || n === appState.currentProfile) return;
+      appState.profiles[n] = appState.profiles[appState.currentProfile];
+      delete appState.profiles[appState.currentProfile];
+      appState.currentProfile = n;
+      updateProfileDropdown(); saveApp();
+  }
+  
+  function deleteProfile() { 
+      if(Object.keys(appState.profiles).length <= 1) return; 
+      if(confirm(`Supprimer le profil ${appState.currentProfile} ?`)) { 
+          delete appState.profiles[appState.currentProfile]; appState.currentProfile = Object.keys(appState.profiles)[0]; 
+          updateProfileDropdown(); loadProfile(appState.currentProfile); 
+      } 
+  }
+  
+  function exportProfile() {
+      saveApp(); 
+      const encodedData = btoa(encodeURIComponent(JSON.stringify(appState.profiles[appState.currentProfile])));
+      navigator.clipboard.writeText(encodedData).then(() => showToast("✔️ Profil copié !")).catch(() => alert("Erreur lors de la copie."));
+  }
+  
+  function importProfile() {
+      const input = prompt("Colle ton Code Profil ici :"); if (!input) return;
+      try {
+          let decodedData = input;
+          if (!input.trim().startsWith('[')) { decodedData = decodeURIComponent(atob(input)); }
+          let parsed = JSON.parse(decodedData);
+          
+          let newBoxes = []; let newLogsNorm = []; let newLogsTry = [];
+          
+          if (Array.isArray(parsed)) { newBoxes = parsed.map(b => ({ ...b, px: parseFloat(b.px), py: parseFloat(b.py) })); } 
+          else if (parsed.layout) { newBoxes = parsed.layout.map(b => ({ ...b, px: parseFloat(b.px), py: parseFloat(b.py) })); newLogsNorm = parsed.logs || []; } 
+          else if (parsed.boxes) { newBoxes = parsed.boxes.map(b => ({ ...b, px: parseFloat(b.px), py: parseFloat(b.py) })); newLogsNorm = parsed.logsNormal || []; newLogsTry = parsed.logsTryhard || []; } 
+
+          const n = prompt("Nom pour ce profil importé :", "Profil Importé"); if(!n) return;
+          
+          appState.profiles[n] = { boxes: newBoxes, logsNormal: newLogsNorm, logsTryhard: newLogsTry };
+          appState.currentProfile = n; updateProfileDropdown(); loadProfile(n); saveApp();
+          showToast("✔️ Profil importé !");
+      } catch(e) { alert("❌ Erreur : Format invalide."); }
+  }
+  
+  function loadProfile(pName) { 
+      if(typeof pName === 'string') appState.currentProfile = pName; 
+      else if(el('profile-selector')) appState.currentProfile = el('profile-selector').value; 
+      
+      let p = appState.profiles[appState.currentProfile]; 
+      boxesData = p.boxes || []; 
+      if(!p.logsNormal) p.logsNormal = []; if(!p.logsTryhard) p.logsTryhard = []; 
+      
+      boxStats = {}; els('.box').forEach(b => b.remove()); 
+      
+      boxesData.forEach(d => { buildBoxDOM(d); boxStats[d.bind] = {h: 0, m: 0}; }); 
+      let maxId = Math.max(0, ...boxesData.map(b => parseInt(b.id.replace('box-',''))));
+      boxCounter = isNaN(maxId) ? 1 : maxId + 1; 
+      
+      renderAllBoxes(); 
+      if(p.camX !== undefined) { panX = p.camX; panY = p.camY; updateBoardTransform(); }
+      else { centerCamera(); }
+      renderLogs(); 
+  }
+
+  function generateDefaultLayout() { 
+      boxesData = []; boxStats = {}; boxCounter = 1; groupCounter = 1; panX = 0; panY = 0; els('.box').forEach(b => b.remove());
+      const step = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--box-size')) || 40) + 2; 
+      
+      let g1 = 'bar' + groupCounter++; for(let i=0; i<12; i++) addBoxData('box-'+boxCounter++, (i-6)*step, -step, '?', g1); 
+      let g2 = 'bar' + groupCounter++; for(let i=0; i<12; i++) addBoxData('box-'+boxCounter++, (i-6)*step, 0, '?', g2); 
+      
+      boxesData.forEach(d => buildBoxDOM(d)); 
+      renderAllBoxes(); centerCamera(); saveApp(); 
+  }
+
+  // ==========================================
+  // --- 6. MOTEUR ABSOLU V51 (DOM & CASES) ---
+  // ==========================================
+  function addBoxData(id, px, py, bind, group, prio=0, cast=0, cd=0, intr='false', name="", color="", icon="", offGcd='false', proc=0, charges=1, resource=0) { 
+      const d = { id, px: parseFloat(px), py: parseFloat(py), bind, group, prio, cast, cd, intr, name, color, icon, offGcd, proc, maxCharges: charges, currentCharges: charges, resource, currentCd: 0, isGlowing: false }; 
+      boxesData.push(d); if(!boxStats[bind]) boxStats[bind] = {h: 0, m: 0}; 
+      return d; 
+  }
+  
+  function getBoxData(id) { return boxesData.find(b => b.id === id); }
+
+  function buildBoxDOM(d) {
+      const box = document.createElement('div'); box.className = 'box'; box.id = d.id; if(d.group) box.dataset.group = d.group;
+      
+      box.innerHTML = `
+          <div class="spell-info-badge"><div class="si-prio"></div></div>
+          <div class="box-content"><div class="box-mod"></div><div class="box-key"></div></div>
+          <div class="stack-counter"></div>
+      `;
+      
+      applyBoxVisuals(box, d);
+      
+      // DRAG & DROP GRIMOIRE 
+      box.addEventListener('dragover', e => { 
+          if(appState.trainingMode === 'TRYHARD') { e.preventDefault(); box.classList.add('drag-over'); } 
+      });
+      box.addEventListener('dragleave', e => box.classList.remove('drag-over'));
+      box.addEventListener('drop', e => { 
+          box.classList.remove('drag-over'); 
+          if(appState.trainingMode !== 'TRYHARD') return; 
+          const sid = e.dataTransfer.getData('text/plain'); 
+          if(sid === 'ERASER') {
+              d.name = ''; d.prio = '0'; d.cast = '0'; d.cd = '0'; d.intr = 'false'; d.color = ''; d.icon = ''; d.offGcd = 'false'; d.maxCharges = 1; d.currentCharges = 1; d.proc = '0'; d.resource = 0; 
+              applyBoxVisuals(box, d); saveApp(); return;
+          }
+          const spell = appState.grimoire.find(s => s.id == sid); 
+          if(spell) { 
+              Object.assign(d, { name: spell.name, color: spell.color, icon: spell.icon, prio: spell.prio, cast: spell.cast, cd: spell.cd, maxCharges: spell.charges, currentCharges: spell.charges, proc: spell.proc, offGcd: spell.offGcd, intr: spell.intr, resource: spell.resource }); 
+              applyBoxVisuals(box, d); saveApp(); 
+          } 
+      });
+      
+      // GROUP HOVER VISUALS
+      box.addEventListener('mouseenter', () => { 
+          hoveredBoxId = box.id; 
+          if(!isPlayMode && d.group && !isDraggingBox) els(`.box[data-group="${d.group}"]`).forEach(b => b.classList.add('group-hover'));
+      });
+      box.addEventListener('mouseleave', () => { 
+          hoveredBoxId = null; 
+          els('.box.group-hover').forEach(b => b.classList.remove('group-hover'));
+      });
+      
+      // DOUBLE CLIC POUR BIND OU SORTS
+      box.addEventListener('dblclick', (e) => {
+          if(isPlayMode) return;
+          e.stopPropagation();
+          if(appState.trainingMode === 'NORMAL') {
+              els('.box').forEach(b => b.classList.remove('listening')); 
+              box.classList.add('listening'); listeningBoxId = box.id; updateBoxText(box, '...');
+          } else {
+              openSpellModal(box, e);
+          }
+      });
+      
+      box.addEventListener('mousedown', (e) => {
+          if(isPlayMode) { if(activeTargetId === box.id) handlePlayInput(formatMouseEvent(e)); return; }
+          e.stopPropagation();
+          if(listeningBoxId) {
+              let m = formatMouseEvent(e); 
+              if(m) { d.bind = m; if(!boxStats[m]) boxStats[m] = {h: 0, m: 0}; applyBoxVisuals(box, d); box.classList.remove('listening'); listeningBoxId = null; saveApp(); } 
+              return;
+          }
+          
+          if(e.button !== 0) return;
+          if(!box.classList.contains('selected')) { 
+              els('.box.selected').forEach(b => b.classList.remove('selected')); box.classList.add('selected'); 
+          }
+          
+          isDraggingBox = true; startX = e.clientX; startY = e.clientY; dragGroupInfo = []; 
+          let toMove = new Set();
+          els('.box.selected').forEach(b => { if(b.dataset.group) els(`.box[data-group="${b.dataset.group}"]`).forEach(g => toMove.add(g)); else toMove.add(b); });
+          toMove.forEach(b => { let dat = getBoxData(b.id); dragGroupInfo.push({el: b, startPx: dat.px, startPy: dat.py}); b.style.zIndex = 1000; });
+          els('.box.group-hover').forEach(b => b.classList.remove('group-hover'));
+      });
+      
+      box.addEventListener('contextmenu', e => { if(isPlayMode || listeningBoxId) e.preventDefault(); });
+      el('board').appendChild(box);
+  }
+
+  function applyBoxVisuals(box, d) {
+      if(!box || !d) return;
+      updateBoxText(box, d.bind); 
+      let b = box.querySelector('.spell-info-badge'); b.querySelector('.si-prio').innerText = d.prio > 0 ? `P${d.prio}` : '';
+      box.style.backgroundColor = d.color || ''; box.style.backgroundImage = d.icon ? `url('${d.icon}')` : ''; 
+      box.classList.toggle('glowing', d.isGlowing);
+      box.querySelector('.stack-counter').innerText = (d.maxCharges > 1) ? d.currentCharges : '';
+      
+      if(appState.trainingMode === 'NORMAL') { box.style.backgroundColor = ''; box.style.backgroundImage = ''; }
+      if(showHeatmap && appState.trainingMode === 'TRYHARD' && d.bind !== '?') { 
+          let s = boxStats[d.bind]; 
+          if(s && (s.h + s.m) > 0) { let r = s.h / (s.h + s.m); box.style.backgroundColor = `rgb(${255*(1-r)}, ${255*r}, 0)`; box.style.backgroundImage = 'none'; } 
+          else { box.style.backgroundColor = '#555'; }
+      }
+  }
+
+  function updateBoxText(box, t) { 
+      const m = box.querySelector('.box-mod'), k = box.querySelector('.box-key'); 
+      if(!t || t === '?' || t === '...') { m.innerText = ''; k.innerText = t || '?'; } 
+      else { let p = t.split('+'); if(p.length > 1) { k.innerText = p.pop(); m.innerText = p.join('+'); } else { m.innerText = ''; k.innerText = t; } } 
+  }
+  
+  function renderAllBoxes() { boxesData.forEach(d => { const b = el(d.id); if(b) { b.style.left = d.px + 'px'; b.style.top = d.py + 'px'; } }); }
+
+  function updateBoardTransform() { 
+      el('board').style.transform = `translate(${panX}px, ${panY}px)`; 
+      el('workspace').style.setProperty('--pan-x', panX + 'px'); 
+      el('workspace').style.setProperty('--pan-y', panY + 'px'); 
+  }
+
+  function isPixelOccupied(tPx, tPy, step, ignIds) { 
+      const m = step - 0.1; 
+      for(let d of boxesData) { if(ignIds.includes(d.id)) continue; if(Math.abs(tPx - d.px) < m && Math.abs(tPy - d.py) < m) return true; } 
+      return false; 
+  }
+
+  // ==========================================
+  // --- 7. LASSO, SOURIS & CORBEILLE ---
+  // ==========================================
+  el('workspace').addEventListener('mousedown', (e) => { 
+      if(isPlayMode) return; 
+      if(e.button === 1 || e.button === 2) { 
+          isPanning = true; panStartX = e.clientX; panStartY = e.clientY; 
+          el('workspace').classList.add('panning'); e.preventDefault(); return; 
+      } 
+      if(e.target === el('workspace') && e.button === 0) { 
+          isLassoing = true; 
+          const r = el('workspace').getBoundingClientRect(); startX = e.clientX - r.left; startY = e.clientY - r.top; 
+          const lasso = el('selection-lasso'); lasso.style.left = startX + 'px'; lasso.style.top = startY + 'px'; lasso.style.width = '0px'; lasso.style.height = '0px'; lasso.style.display = 'block'; 
+          if(!e.shiftKey) els('.box.selected').forEach(b => b.classList.remove('selected')); 
+      } 
+  });
+  
+  document.addEventListener('mousemove', (e) => { 
+      if(isPlayMode) return; 
+      if(isPanning) { 
+          panX += (e.clientX - panStartX); panY += (e.clientY - panStartY); panStartX = e.clientX; panStartY = e.clientY; 
+          updateBoardTransform(); return; 
+      } 
+      
+      const sz = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--box-size')), stp = sz + 2; 
+      
+      if(isDraggingBox && dragGroupInfo.length > 0) { 
+          // GRILLE DYNAMIQUE
+          el('workspace').classList.add('show-drag-grid');
+          let snapVal = parseFloat(el('snapDivisor').value) || 1; let sV = stp / snapVal; 
+          el('workspace').style.backgroundSize = `${sV}px ${sV}px`; el('workspace').style.backgroundPosition = `${panX}px ${panY}px`;
+          
+          let mDx = e.clientX - startX, mDy = e.clientY - startY; 
+          let dx = Math.round(mDx / sV) * sV, dy = Math.round(mDy / sV) * sV; 
+          const mIds = dragGroupInfo.map(i => i.el.id); let isDragInvalid = false; 
+          
+          // GHOST PLACEMENT
+          let ghostContainer = el('ghost-container'); ghostContainer.innerHTML = '';
+          
+          dragGroupInfo.forEach(i => { 
+              let tPx = i.startPx + dx, tPy = i.startPy + dy; 
+              let scrX = tPx + panX, scrY = tPy + panY;
+              if(scrX < 0 || scrY < 0 || scrX + sz > window.innerWidth || scrY + sz > el('workspace').clientHeight) isDragInvalid = true;
+              if(isPixelOccupied(tPx, tPy, stp, mIds)) isDragInvalid = true; 
+              
+              if(!isDragInvalid) {
+                  let ghost = document.createElement('div'); ghost.className = 'ghost-box';
+                  ghost.style.left = tPx + 'px'; ghost.style.top = tPy + 'px'; ghost.style.display = 'block';
+                  ghostContainer.appendChild(ghost);
+              }
+              i.el.style.left = (i.startPx + mDx) + 'px'; i.el.style.top = (i.startPy + mDy) + 'px'; // Drag fluide
+          }); 
+          dragGroupInfo.forEach(i => { if (isDragInvalid) i.el.classList.add('drag-invalid'); else i.el.classList.remove('drag-invalid'); }); 
+          
+          // CORBEILLE INTERACTIVE
+          const tz = el('trash-zone'); tz.classList.add('active');
+          if(e.clientY > window.innerHeight - 80) tz.classList.add('hover'); else tz.classList.remove('hover');
+      } 
+      else if(isLassoing) { 
+          const r = el('workspace').getBoundingClientRect(); let cX = e.clientX - r.left, cY = e.clientY - r.top; 
+          const lasso = el('selection-lasso'); lasso.style.width = Math.abs(cX - startX) + 'px'; lasso.style.height = Math.abs(cY - startY) + 'px'; 
+          lasso.style.left = Math.min(startX, cX) + 'px'; lasso.style.top = Math.min(startY, cY) + 'px'; 
+          const lr = lasso.getBoundingClientRect(); 
+          els('.box').forEach(b => { 
+              const br = b.getBoundingClientRect(); 
+              if (!(lr.right < br.left || lr.left > br.right || lr.bottom < br.top || lr.top > br.bottom)) b.classList.add('selected'); 
+              else if (!e.shiftKey) b.classList.remove('selected'); 
+          }); 
+      } 
+  });
+  
+  document.addEventListener('mouseup', (e) => { 
+      if(isPanning) { isPanning = false; el('workspace').classList.remove('panning'); saveSettings(); saveApp(); return; } 
+      
+      if(isDraggingBox) { 
+          el('workspace').classList.remove('show-drag-grid'); el('ghost-container').innerHTML = '';
+          const tz = el('trash-zone'); tz.classList.remove('active', 'hover');
+          
+          if(e.clientY > window.innerHeight - 80) { // Lâché dans la corbeille !
+              promptDelete(dragGroupInfo.map(i => i.el)); isDraggingBox = false; dragGroupInfo = []; renderAllBoxes(); return;
+          }
+          
+          const sz = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--box-size')) || 40, stp = sz + 2; 
+          let mDx = e.clientX - startX, mDy = e.clientY - startY; 
+          let sD = parseFloat(el('snapDivisor').value) || 1, sV = stp / sD; 
+          let dx = Math.round(mDx / sV) * sV, dy = Math.round(mDy / sV) * sV; const mIds = dragGroupInfo.map(i => i.el.id); 
+          
+          const check = (tx, ty) => { 
+              for(let i of dragGroupInfo){ 
+                  let scrX = i.startPx + tx + panX, scrY = i.startPy + ty + panY;
+                  if(scrX < 0 || scrY < 0 || scrX + sz > window.innerWidth || scrY + sz > el('workspace').clientHeight) return false;
+                  if(isPixelOccupied(i.startPx + tx, i.startPy + ty, stp, mIds)) return false; 
+              } return true; 
+          }; 
+          
+          if(!check(dx, dy)) { 
+              let q = [{x: dx, y: dy}], v = new Set([`${dx.toFixed(1)},${dy.toFixed(1)}`]), dir = [[sV,0],[-sV,0],[0,sV],[0,-sV],[sV,sV],[-sV,-sV],[sV,-sV],[-sV,sV]], f = false; 
+              while(q.length > 0) { 
+                  let c = q.shift(); if(check(c.x, c.y)){ dx = c.x; dy = c.y; f = true; break; } 
+                  if(v.size > 500) break; 
+                  for(let _d of dir){ let nx = c.x + _d[0], ny = c.y + _d[1], k = `${nx.toFixed(1)},${ny.toFixed(1)}`; if(!v.has(k)){ v.add(k); q.push({x: nx, y: ny}); } } 
+              } 
+              if(!f){ dx = 0; dy = 0; } 
+          } 
+          
+          dragGroupInfo.forEach(i => { i.el.classList.remove('drag-invalid'); i.el.style.zIndex = ''; let d = getBoxData(i.el.id); d.px = i.startPx + dx; d.py = i.startPy + dy; }); 
+          isDraggingBox = false; dragGroupInfo = []; renderAllBoxes(); saveApp(); 
+      } 
+      
+      if(isLassoing) { isLassoing = false; el('selection-lasso').style.display = 'none'; } 
+  });
+
+  function promptDelete(elements) {
+      if(!elements || elements.length === 0) return;
+      playTone('miss'); // Petit son de corbeille
+      elements.forEach(b => { boxesData = boxesData.filter(d => d.id !== b.id); b.remove(); }); saveApp(); showToast("🗑️ Supprimé");
+  }
+
+  // --- REGLAGES VUE ---
+  function centerCamera() { 
+      if(!boxesData.length) { panX = window.innerWidth / 2; panY = (window.innerHeight - 58) / 2; } 
+      else { 
+          let mx=Infinity, mxx=-Infinity, my=Infinity, mxy=-Infinity; 
+          boxesData.forEach(d => { if(d.px<mx) mx=d.px; if(d.px>mxx) mxx=d.px; if(d.py<my) my=d.py; if(d.py>mxy) mxy=d.py; }); 
+          const size = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--box-size')); 
+          panX = (window.innerWidth / 2) - ((mx + mxx) / 2) - (size / 2); panY = ((window.innerHeight - 58) / 2) - ((my + mxy) / 2) - (size / 2); 
+      } 
+      updateBoardTransform(); saveSettings(); saveApp();
+  }
+  
+  function updateSizeFromSlider() { applySizeChange(el('sizeSlider').value); } 
+  function updateSizeFromInput() { let v = parseInt(el('sizeInput').value); if(isNaN(v) || v < 20) v = 20; if(v > 150) v = 150; el('sizeInput').value = v; el('sizeSlider').value = v; applySizeChange(v); }
+  
+  function applySizeChange(val) { 
+      let nS = parseInt(val), oS = parseInt(document.documentElement.style.getPropertyValue('--box-size')) || 40; if(nS === oS) return; 
+      if(boxesData.length) { 
+          let r = (nS + 2) / (oS + 2), grps = {}; 
+          boxesData.forEach(d => { let g = d.group || d.id; if(!grps[g]) grps[g] = []; grps[g].push(d); }); 
+          for(let g in grps) { 
+              let grp = grps[g], cx = 0, cy = 0; grp.forEach(d => { cx += d.px; cy += d.py; }); cx /= grp.length; cy /= grp.length; 
+              grp.forEach(d => { d.px = cx + (d.px - cx) * r; d.py = cy + (d.py - cy) * r; }); 
+          } 
+      } 
+      document.documentElement.style.setProperty('--box-size', nS + 'px'); el('sizeInput').value = nS; el('sizeSlider').value = nS; 
+      renderAllBoxes(); updateBoardTransform(); saveSettings(); saveApp(); 
+  }
+
+  function addBox() { 
+      if(isPlayMode) return; 
+      const step = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--box-size')) + 2; 
+      let px = Math.round(((window.innerWidth / 2) - panX) / step) * step; let py = Math.round((((window.innerHeight - 58) / 2) - panY) / step) * step; 
+      while(isPixelOccupied(px, py, step, [])) px += step; 
+      let d = addBoxData('box-'+boxCounter++, px, py, '?', ''); buildBoxDOM(d); renderAllBoxes(); saveApp(); 
+  }
+  
+  function groupSelected() { 
+      const sel = els('.box.selected'); if(sel.length < 2) return alert("Sélectionnez au moins 2 cases au Lasso pour les lier."); 
+      const g = 'bar'+groupCounter++; sel.forEach(b => { let d = getBoxData(b.id); if(d) d.group = g; b.dataset.group = g; b.classList.remove('selected'); }); saveApp(); showToast("🔗 Cases liées");
+  }
+  function ungroupSelected() { 
+      const sel = els('.box.selected'); if(sel.length === 0) return alert("Sélectionnez les cases à dégrouper."); 
+      sel.forEach(b => { let d = getBoxData(b.id); if(d) d.group = ''; b.dataset.group = ''; b.classList.remove('selected'); }); saveApp(); showToast("🔓 Cases déliées");
+  }
+  
+  function resetWholeInterface() { 
+      if(!confirm("Réinitialiser l'interface ? (Les raccourcis seront conservés)")) return; 
+      let mem = {}; boxesData.forEach(d => { if(d.bind && d.bind !== '?' && d.bind !== '...') mem[d.bind] = d; }); 
+      els('.box').forEach(b => b.remove()); boxesData = []; panX = 0; panY = 0; boxCounter = 1; 
+      const step = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--box-size')) + 2; const binds = Object.keys(mem); let idx = 0; 
+      for(let y=-1; y<=0; y++) { 
+          for(let i=0; i<12; i++) { 
+              let b = binds[idx] || '?'; let m = mem[b] || {prio:"0",cast:"0",cd:"0",intr:"false",name:"",color:"",icon:"",offGcd:"false",maxCharges:1,proc:0,resource:0}; 
+              let d = addBoxData('box-'+boxCounter++, (i-6)*step, y*step, b, y===-1?'top':'bot', m.prio, m.cast, m.cd, m.intr, m.name, m.color, m.icon, m.offGcd, m.proc, m.maxCharges, m.resource); buildBoxDOM(d); idx++; 
+          } 
+      } 
+      renderAllBoxes(); centerCamera(); saveApp(); if(el('settings-panel').style.display === 'flex') toggleSettingsPanel(); 
+  }
+
+  // ==========================================
+  // --- 8. CONFIGURATION & MENUS ---
+  // ==========================================
+  function toggleHeatmap() { 
+      if(appState.trainingMode !== 'TRYHARD') return; 
+      showHeatmap = !showHeatmap; el('btnHeatmap').style.fontWeight = showHeatmap ? 'bold' : 'normal'; 
+      boxesData.forEach(d => applyBoxVisuals(el(d.id), d)); 
+  }
+
+  function saveSettings() { 
+      localStorage.setItem('wow_elvui_trainer_size', el('sizeSlider').value); 
+      localStorage.setItem('wow_elvui_trainer_snap', el('snapDivisor').value); 
+  }
+  
+  function loadSettings() { 
+      const sz = localStorage.getItem('wow_elvui_trainer_size'); if(sz) { el('sizeSlider').value = sz; el('sizeInput').value = sz; document.documentElement.style.setProperty('--box-size', sz+'px'); } else { document.documentElement.style.setProperty('--box-size', '40px'); }
+      const sn = localStorage.getItem('wow_elvui_trainer_snap'); if(sn) el('snapDivisor').value = sn; 
+      updateBoardTransform(); 
+  }
+  
+  function saveTrainingConfig() { 
+      localStorage.setItem('wow_elvui_v48_cfg', JSON.stringify({ sound: el('cfgSound').checked, scale: el('cfgFontScale').value, saveLogs: el('cfgSaveLogs').checked, sprint: el('cfgSprint').value, rhythm: el('cfgRhythm').checked, blind: el('cfgBlind').checked, rot: el('cfgRotation').checked, gcd: el('cfgGcd').value, maxRes: el('cfgMaxResource').value, sp: el('cfgStartSpeed').value, st: el('cfgStep').value, to: el('cfgTimeout').value, sc: customScenarios })); 
+  }
+  
+  function loadTrainingConfig() { 
+      let s = localStorage.getItem('wow_elvui_v48_cfg') || localStorage.getItem('wow_elvui_v46_cfg'); 
+      if(s){ let c = JSON.parse(s); if(el('cfgSound')) el('cfgSound').checked = c.sound !== false; if(el('cfgFontScale')) el('cfgFontScale').value = c.scale || 100; if(el('cfgSaveLogs')) el('cfgSaveLogs').checked = c.saveLogs !== false; if(el('cfgSprint')) el('cfgSprint').value = c.sprint || "0"; if(el('cfgRhythm')) el('cfgRhythm').checked = c.rhythm || false; if(el('cfgBlind')) el('cfgBlind').checked = c.blind || false; if(el('cfgRotation')) el('cfgRotation').checked = c.rot || false; if(el('cfgGcd')) el('cfgGcd').value = c.gcd || 1500; if(el('cfgMaxResource')) el('cfgMaxResource').value = c.maxRes || 100; if(el('cfgStartSpeed')) el('cfgStartSpeed').value = c.sp || 1000; if(el('cfgStep')) el('cfgStep').value = c.st || 20; if(el('cfgTimeout')) el('cfgTimeout').value = c.to || 2000; customScenarios = c.sc || []; updatePresetHighlight(); } else { setDifficulty(1500,0,3000, el('pre-deb')); } applyFontScale(); 
+  }
+  
+  function toggleSettingsPanel() { 
+      const s = el('settings-panel').style; 
+      if(s.display === 'flex') { s.display = 'none'; if(activeTutType === 'OPTIONS') closeTutorial(); } 
+      else { s.display = 'flex'; el('logs-panel').style.display = 'none'; closeSpellModal(); if (!localStorage.getItem('wow_elvui_tut51_OPTIONS')) launchTutorial('OPTIONS', false); }
+  }
+  function toggleLogsPanel() { const s = el('logs-panel').style; s.display = s.display === 'flex' ? 'none' : 'flex'; el('settings-panel').style.display = 'none'; if(s.display === 'flex') renderLogs(); closeSpellModal(); }
+  function applyFontScale() { document.documentElement.style.setProperty('--font-scale', el('cfgFontScale').value/100); saveTrainingConfig(); }
+  function setDifficulty(sp, st, to, btn) { el('cfgStartSpeed').value = sp; el('cfgStep').value = st; el('cfgTimeout').value = to; saveTrainingConfig(); els('.preset-btn').forEach(b => b.classList.remove('active-preset')); if(btn) btn.classList.add('active-preset'); }
+  function customConfigChanged() { els('.preset-btn').forEach(b => b.classList.remove('active-preset')); saveTrainingConfig(); }
+  function updatePresetHighlight() { const sp = el('cfgStartSpeed').value, st = el('cfgStep').value, to = el('cfgTimeout').value; els('.preset-btn').forEach(b => b.classList.remove('active-preset')); if(sp==1500 && st==0 && to==3000) { if(el('pre-deb')) el('pre-deb').classList.add('active-preset'); } else if(sp==800 && st==10 && to==1500) { if(el('pre-int')) el('pre-int').classList.add('active-preset'); } else if(sp==500 && st==10 && to==1000) { if(el('pre-con')) el('pre-con').classList.add('active-preset'); } else if(sp==350 && st==5 && to==800) { if(el('pre-exp')) el('pre-exp').classList.add('active-preset'); } else if(sp==200 && st==0 && to==600) { if(el('pre-pro')) el('pre-pro').classList.add('active-preset'); } }
+
+  // ==========================================
+  // --- 9. GRIMOIRE & SORTS ---
+  // ==========================================
+  function toggleGrimoire() { if(appState.trainingMode !== 'TRYHARD') return; const p = el('grimoire-panel').style; p.display = p.display === 'flex' ? 'none' : 'flex'; }
+  function createGrimoireSpell() { const n = prompt("Nom du sort :"); if(!n) return; appState.grimoire.push({ id:Date.now(), name:n, color:'', icon:'', prio:0, cast:0, cd:0, charges:1, offGcd:'false', intr:'false', proc:0, resource:0 }); renderGrimoire(); saveApp(); }
+  function renderGrimoire() { const list = el('spell-list'); list.innerHTML = ''; appState.grimoire.forEach(s => { const elItem = document.createElement('div'); elItem.className = 'spell-item'; elItem.draggable = true; elItem.ondragstart = (e) => e.dataTransfer.setData('text/plain', s.id); elItem.innerHTML = `<div class="spell-icon-preview" style="background-color:${s.color}; background-image:url('${s.icon}')"></div><div style="flex:1;">${s.name} <span style="color:#a6e3a1;font-size:10px;">${s.resource!=0?s.resource:''}</span></div><button onclick="editGrimoireSpell(${s.id})" style="padding:2px 5px;">⚙️</button><button onclick="deleteGrimoireSpell(${s.id})" style="padding:2px 5px; color:#f38ba8;">✖</button>`; list.appendChild(elItem); }); }
+  function deleteGrimoireSpell(id) { if(confirm("Supprimer ce sort du Grimoire ?")) { appState.grimoire = appState.grimoire.filter(s => s.id !== id); renderGrimoire(); saveApp(); } }
+  
+  function editGrimoireSpell(id) { 
+      const s = appState.grimoire.find(x => x.id === id); editingSpellBoxId = "GRIMOIRE_" + id; 
+      el('spell-name').value = s.name; el('spell-priority').value = s.prio; el('spell-cast').value = s.cast; el('spell-cd').value = s.cd; el('spell-interrupt').checked = (s.intr === 'true'); el('spell-color').value = s.color || ''; el('spell-icon').value = s.icon || ''; el('spell-offgcd').checked = (s.offGcd === 'true'); el('spell-charges').value = s.charges || 1; el('spell-proc').value = s.proc || 0; el('spell-resource').value = s.resource || 0; 
+      let modal = el('spell-modal'); modal.style.display = 'flex'; modal.style.left = '300px'; modal.style.top = '100px'; 
+  }
+  
+  function openSpellModal(box, e) { 
+      editingSpellBoxId = box.id; let d = getBoxData(box.id); 
+      el('spell-name').value = d.name; el('spell-priority').value = d.prio; el('spell-cast').value = d.cast; el('spell-cd').value = d.cd; el('spell-interrupt').checked = (d.intr === 'true'); el('spell-color').value = d.color || ''; el('spell-icon').value = d.icon || ''; el('spell-offgcd').checked = (d.offGcd === 'true'); el('spell-charges').value = d.maxCharges || 1; el('spell-proc').value = d.proc || 0; el('spell-resource').value = d.resource || 0; 
+      let modal = el('spell-modal'); modal.style.display = 'flex'; let rect = modal.getBoundingClientRect(); let x = e.clientX + 15, y = e.clientY - 50;
+      if (x + rect.width > window.innerWidth) x = window.innerWidth - rect.width - 15; if (y + rect.height > window.innerHeight) y = window.innerHeight - rect.height - 15;
+      if (x < 15) x = 15; if (y < 15) y = 15;
+      modal.style.left = x + 'px'; modal.style.top = y + 'px'; 
+  }
+  function closeSpellModal() { el('spell-modal').style.display = 'none'; editingSpellBoxId = null; }
+  
+  function saveSpellProperties() { 
+      if(!editingSpellBoxId) return; 
+      if(editingSpellBoxId.startsWith("GRIMOIRE_")) { 
+          const id = parseInt(editingSpellBoxId.split('_')[1]); const s = appState.grimoire.find(x => x.id === id); 
+          s.name = el('spell-name').value; s.prio = el('spell-priority').value; s.cast = el('spell-cast').value; s.cd = el('spell-cd').value; s.intr = el('spell-interrupt').checked ? 'true' : 'false'; s.color = el('spell-color').value; s.icon = el('spell-icon').value; s.offGcd = el('spell-offgcd').checked ? 'true' : 'false'; s.charges = parseInt(el('spell-charges').value); s.proc = el('spell-proc').value; s.resource = parseInt(el('spell-resource').value) || 0; 
+          renderGrimoire(); closeSpellModal(); saveApp(); return; 
+      } 
+      let d = getBoxData(editingSpellBoxId); 
+      d.name = el('spell-name').value; d.prio = el('spell-priority').value; d.cast = el('spell-cast').value; d.cd = el('spell-cd').value; d.intr = el('spell-interrupt').checked ? 'true' : 'false'; d.color = el('spell-color').value; d.icon = el('spell-icon').value; d.offGcd = el('spell-offgcd').checked ? 'true' : 'false'; d.maxCharges = parseInt(el('spell-charges').value); d.currentCharges = d.maxCharges; d.proc = el('spell-proc').value; d.resource = parseInt(el('spell-resource').value) || 0; 
+      applyBoxVisuals(el(editingSpellBoxId), d); closeSpellModal(); saveApp(); 
+  }
+  function resetSpellProperties() { 
+      if(!editingSpellBoxId || editingSpellBoxId.startsWith("GRIMOIRE_")) return; let d = getBoxData(editingSpellBoxId); 
+      d.name = ''; d.prio = '0'; d.cast = '0'; d.cd = '0'; d.intr = 'false'; d.color = ''; d.icon = ''; d.offGcd = 'false'; d.maxCharges = 1; d.currentCharges = 1; d.proc = '0'; d.resource = 0; 
+      applyBoxVisuals(el(editingSpellBoxId), d); closeSpellModal(); saveApp(); 
+  }
+
+  // ==========================================
+  // --- 10. MOTEUR D'ENTRAÎNEMENT & GAMEPLAY ---
+  // ==========================================
+  function updateResourceBar() {
+      if(appState.trainingMode !== 'TRYHARD') return;
+      const maxR = parseInt(el('cfgMaxResource').value) || 100; const w = el('resource-bar-wrapper'), f = el('resource-bar-fill'), t = el('resource-bar-text');
+      if (!isPlayMode) { w.style.display = 'none'; return; } w.style.display = 'block';
+      let pct = Math.max(0, Math.min(100, (currentResource / maxR) * 100)); f.style.width = pct + '%'; t.innerText = `${currentResource} / ${maxR}`;
+  }
+  
+  function spawnFCT(elBox, rTime, type) { 
+      const f = document.createElement('div'); 
+      if(type === 'hit') {
+          if(rTime < 200) { f.className = 'fct crit'; f.innerText = `${rTime}ms !`; } 
+          else { f.className = 'fct normal-hit'; f.innerText = `${rTime}ms`; }
+      } else { f.className = 'fct fall-miss'; f.innerText = 'Raté!'; }
+      elBox.appendChild(f); setTimeout(() => f.remove(), 1000); 
+  }
+  
+  function simulateKeypress(bindStr) { 
+      if(!bindStr) return; const d = boxesData.find(b => b.bind === bindStr); 
+      if(d) { const bEl = el(d.id); if(bEl) { bEl.classList.add('pressed'); setTimeout(() => bEl.classList.remove('pressed'), 100); } } 
+  }
+  
+  function updateCombo(isHit) {
+      const cc = el('combo-counter');
+      if (isHit) {
+          currentCombo++; if(currentCombo > maxCombo) maxCombo = currentCombo;
+          cc.innerText = currentCombo + " Combo"; cc.className = 'combo-bump';
+          if ([10, 25, 50, 100, 150, 200, 300].includes(currentCombo)) {
+              playMilestoneSound(currentCombo); cc.classList.add('combo-milestone');
+              if(currentCombo >= 50) cc.innerText = "🔥 " + currentCombo + " COMBO ! 🔥";
+              setTimeout(() => cc.classList.remove('combo-milestone'), 500);
+          } else { setTimeout(() => cc.className = '', 100); }
+      } else {
+          currentCombo = 0; cc.innerText = "Faute !"; cc.className = 'combo-break';
+          setTimeout(() => { cc.className = ''; cc.innerText = "0 Combo"; }, 500);
+      }
+  }
+
+  function handlePlayInput(bind) {
+      if(!isPlayMode || !activeTargetId || !bind || isProcessingInput) return;
+      simulateKeypress(bind); 
+      isProcessingInput = true; clearTimeout(inputDebounceTimer); inputDebounceTimer = setTimeout(() => { isProcessingInput = false; }, 150);
+
+      const tId = activeTargetId; activeTargetId = null; clearTimeout(failTimeoutId);
+      const t = el(tId); const d = getBoxData(tId); const isNorm = (appState.trainingMode === 'NORMAL');
+
+      if (!isNorm && isPlayerCasting && d.intr === 'true') { 
+          clearTimeout(castFinishTimeoutId); isPlayerCasting = false; stopGlobalCastBar(); triggerMiss(t, d); return; 
+      }
+      
+      if (d.bind === bind) {
+          playTone('hit', tId); const rTime = Math.round(performance.now() - startTime); hits++; totalReactTime += rTime;
+          if(boxStats[bind]) boxStats[bind].h++; spawnFCT(t, rTime, 'hit');
+          t.classList.remove('active-target'); t.classList.add('pulse-hit'); setTimeout(() => t.classList.remove('pulse-hit'), 300);
+          createParticles(t);
+          updateStats(); if(isNorm) updateCombo(true); t.querySelectorAll('.rhythm-ring').forEach(r => r.remove());
+
+          if (!isNorm) {
+              const mR = parseInt(el('cfgMaxResource').value) || 100; 
+              currentResource = Math.max(0, Math.min(mR, currentResource + (parseInt(d.resource)||0))); updateResourceBar();
+              
+              boxesData.forEach(box => { 
+                  if(box.proc > 0 && (Math.random()*100) <= box.proc) { 
+                      box.isGlowing = true; box.currentCharges = box.maxCharges; box.currentCd = 0; applyBoxVisuals(el(box.id), box); const ol = el(box.id).querySelector('.box-cd-overlay'); if(ol) ol.remove(); 
+                  } 
+              });
+              
+              if(d.maxCharges > 1) { d.currentCharges--; applyBoxVisuals(t, d); }
+              let gcdTime = parseInt(el('cfgGcd').value) || 1500;
+              if (d.offGcd !== 'true') { 
+                  isGlobalCooldown = true; boxesData.forEach(box => { if(box.offGcd !== 'true' && box.id !== tId && box.currentCd <= 0 && box.currentCharges > 0) triggerGCDVisual(el(box.id), gcdTime); }); 
+                  setTimeout(() => isGlobalCooldown = false, gcdTime); 
+              }
+              
+              let c = parseInt(d.cast)||0, cd = parseInt(d.cd)||0;
+              if (cd > 0 && d.currentCd <= 0) applyCD(d, cd); 
+              if (c > 0) { 
+                  isPlayerCasting = true; currentCastInterruptible = (d.intr === 'true'); startGlobalCastBar(c, d.name); 
+                  castFinishTimeoutId = setTimeout(() => { isPlayerCasting = false; stopGlobalCastBar(); triggerNextTarget(); }, c); 
+              } else { let w = d.offGcd !== 'true' ? Math.max(0, gcdTime) : 0; setTimeout(triggerNextTarget, w > 0 ? w : 50); }
+          } else { currentDelay = Math.max(100, currentDelay - parseInt(el('cfgStep').value)); triggerNextTarget(); }
+      } else { triggerMiss(t, d); }
+  }
+
+  function triggerGCDVisual(elBx, ms) { 
+      if(!elBx || elBx.querySelector('.box-gcd-overlay')) return; 
+      const o = document.createElement('div'); o.className = 'box-gcd-overlay'; o.style.animationDuration = ms + 'ms'; 
+      elBx.appendChild(o); setTimeout(() => { if(o.parentNode) o.remove(); }, ms); 
+  }
+  function applyCD(d, ms) { 
+      d.currentCd = ms; const bxEl = el(d.id); if(!bxEl) return; 
+      bxEl.classList.add('on-cd'); const o = document.createElement('div'); o.className = 'box-cd-overlay'; o.innerHTML = `<div class="box-cd-text"></div>`; bxEl.appendChild(o); 
+      const i = setInterval(() => { 
+          d.currentCd -= 100; 
+          if(d.currentCd <= 0 || !isPlayMode) { 
+              clearInterval(i); if(d.currentCharges < d.maxCharges) { d.currentCharges++; applyBoxVisuals(bxEl,d); } 
+              if(d.currentCharges < d.maxCharges && isPlayMode) d.currentCd = parseInt(d.cd); else { bxEl.classList.remove('on-cd'); if(o.parentNode) o.remove(); } 
+          } else o.firstChild.innerText = (d.currentCd/1000).toFixed(1); 
+      }, 100); 
+  }
+  function startGlobalCastBar(ms, n) { 
+      const w = el('global-castbar-wrapper'), f = el('global-castbar-fill'); el('global-castbar-text').innerText = n || 'Cast...'; 
+      w.style.display = 'flex'; f.style.width = '0%'; void f.offsetWidth; f.style.transition = `width ${ms}ms linear`; f.style.width = '100%'; 
+  }
+  function stopGlobalCastBar() { el('global-castbar-wrapper').style.display = 'none'; }
+  
+  function triggerMiss(t, d) { 
+      playTone('miss'); misses++; if(boxStats[d.bind]) boxStats[d.bind].m++; spawnFCT(t, 0, 'miss'); 
+      t.classList.remove('active-target'); t.classList.add('shake-miss'); 
+      t.querySelectorAll('.rhythm-ring').forEach(r => r.remove()); 
+      if(appState.trainingMode === 'NORMAL') updateCombo(false); 
+      setTimeout(() => t.classList.remove('shake-miss'), 300); updateStats(); isProcessingInput = false; triggerNextTarget(); 
+  }
+
+  function togglePlayMode() {
+      const b = el('modeBtn');
+      if(!isPlayMode) {
+          if(!boxesData.length) return alert("Ajoutez des cases d'abord."); 
+          if(!boxesData.some(d => d.bind !== '?' && d.bind !== '')) return alert("Assignez vos touches (Double-clic) d'abord.");
+          
+          initAudio();
+          el('settings-panel').style.display = 'none'; el('logs-panel').style.display = 'none'; if(el('grimoire-panel')) el('grimoire-panel').style.display = 'none'; closeSpellModal();
+          
+          let cdEl = el('countdown'); cdEl.style.display = 'block';
+          let count = 3; cdEl.innerText = count;
+          b.innerText = "■ Arrêter"; b.className = "danger"; b.style.pointerEvents = 'none';
+          
+          isPlayMode = true; // Activer le flag tout de suite pour bloquer l'édition
+          
+          countdownTimerId = setInterval(() => {
+              count--;
+              if(count > 0) { cdEl.innerText = count; playTone('hit'); }
+              else {
+                  clearInterval(countdownTimerId); countdownTimerId = null;
+                  cdEl.innerText = "GO !"; playMilestoneSound(0);
+                  setTimeout(() => cdEl.style.display = 'none', 500); b.style.pointerEvents = 'auto';
+                  startActualPlay();
+              }
+          }, 1000);
+      } else {
+          // --- SÉCURITÉ ARRÊT ---
+          isPlayMode = false; 
+          b.innerText = "▶ Lancer"; b.className = "success"; b.style.pointerEvents = 'auto';
+          document.body.classList.remove('playing'); el('stats').style.display = "none";
+          
+          if(countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; el('countdown').style.display = 'none'; }
+          
+          clearTimeout(spawnTimeoutId); clearTimeout(failTimeoutId); clearTimeout(castFinishTimeoutId); clearInterval(sprintTimerId);
+          isPlayerCasting = false; stopGlobalCastBar(); 
+          ['resource-bar-wrapper', 'combo-counter', 'blind-prompt', 'timerVal'].forEach(id => { if(el(id)) el(id).style.display = 'none'; });
+          document.body.removeAttribute('data-blind');
+          if(activeTargetId) { let t = el(activeTargetId); if(t) { t.classList.remove('active-target','shake-miss', 'pulse-hit'); t.querySelectorAll('.rhythm-ring').forEach(r => r.remove()); } } 
+          activeTargetId = null; isProcessingInput = false; 
+          try { addLogSession(); } catch(e) { console.error(e); }
+          boxesData.forEach(d => { let bx = el(d.id); if(bx) applyBoxVisuals(bx, d);});
+      }
+  }
+
+  function startActualPlay() {
+      document.body.setAttribute('data-mode', 'PLAY'); document.body.classList.add('playing'); showHeatmap = false; if(el('btnHeatmap')) el('btnHeatmap').style.fontWeight = 'normal';
+      boxesData.forEach(d => { 
+          d.currentCd = 0; d.currentCharges = d.maxCharges; d.isGlowing = false; 
+          let bxEl = el(d.id); if(bxEl){ bxEl.classList.remove('listening','selected','on-cd','glowing'); bxEl.querySelectorAll('.box-cd-overlay, .box-gcd-overlay, .rhythm-ring').forEach(o=>o.remove()); applyBoxVisuals(bxEl, d); } 
+      });
+      el('stats').style.display = "flex"; hits = 0; misses = 0; totalReactTime = 0; currentDelay = parseInt(el('cfgStartSpeed').value); isPlayerCasting = false; isGlobalCooldown = false; stopGlobalCastBar(); updateStats(); el('apmVal').innerText = '0'; playSessionStart = performance.now(); 
+      if(appState.trainingMode === 'NORMAL') { 
+          currentCombo = 0; maxCombo = 0; el('combo-counter').innerText = "0 Combo"; el('combo-counter').style.display = 'block'; 
+          if(el('cfgBlind').checked) { document.body.setAttribute('data-blind', 'true'); el('blind-prompt').style.display = 'block'; el('blind-prompt').innerText = '...'; } 
+          const sV = parseInt(el('cfgSprint').value) || 0; 
+          if(sV > 0) { el('timerVal').style.display = 'inline'; sprintTimerId = setInterval(() => { let left = sV * 1000 - (performance.now() - playSessionStart); if(left <= 0) { togglePlayMode(); showScoreModal(); return; } el('timerVal').innerText = `⏱️ ${Math.ceil(left/1000)}s`; }, 100); } 
+      } else { currentResource = 0; updateResourceBar(); }
+      triggerNextTarget();
+  }
+
+  function triggerNextTarget() {
+      if(!isPlayMode) return; clearTimeout(spawnTimeoutId); isProcessingInput = false; const isNorm = (appState.trainingMode === 'NORMAL');
+      let valid = isNorm ? boxesData.filter(d => d.bind !== '?' && d.bind !== '') : boxesData.filter(d => d.bind !== '?' && d.bind !== '' && d.currentCharges > 0 && d.currentCd <= 0 && (!isGlobalCooldown || d.offGcd === 'true') && (currentResource + (parseInt(d.resource)||0) >= 0));
+      if(valid.length === 0) { spawnTimeoutId = setTimeout(triggerNextTarget, 100); return; }
+      
+      let pool = valid;
+      if(!isNorm) { 
+          const gl = valid.filter(d => d.isGlowing); if(gl.length > 0) pool = gl; 
+          else { const pB = valid.filter(d => parseInt(d.prio) > 0); if(pB.length > 0) { let hp = Math.min(...pB.map(d => parseInt(d.prio))); pool = pB.filter(d => parseInt(d.prio) === hp); } else { pool = valid.filter(d => parseInt(d.prio) === 0); if(pool.length === 0) pool = valid; } } 
+      }
+      
+      const d = pool[Math.floor(Math.random() * pool.length)]; activeTargetId = d.id;
+      spawnTimeoutId = setTimeout(() => { 
+          if(!isPlayMode) return; if(!isNorm && (d.currentCharges <= 0 || d.currentCd > 0 || (isGlobalCooldown && d.offGcd !== 'true'))) { triggerNextTarget(); return; } 
+          if(d.isGlowing) { d.isGlowing = false; applyBoxVisuals(el(d.id), d); } 
+          let boxEl = el(d.id); boxEl.classList.add('active-target'); startTime = performance.now(); let tout = parseInt(el('cfgTimeout').value);
+          if(isNorm) { if(el('cfgBlind').checked) el('blind-prompt').innerText = d.bind; if(el('cfgRhythm').checked && !el('cfgBlind').checked) { let r = document.createElement('div'); r.className = 'rhythm-ring'; r.style.animationDuration = tout + 'ms'; boxEl.appendChild(r); } }
+          failTimeoutId = setTimeout(() => { if(isPlayMode && activeTargetId === d.id) triggerMiss(boxEl, d); }, tout); 
+      }, Math.max(50, Math.random() * currentDelay));
+  }
+
+  function updateStats() { el('hitsVal').innerText = hits; el('missesVal').innerText = misses; el('reactVal').innerText = hits > 0 ? Math.round(totalReactTime/hits) + ' ms' : '- ms'; let dur = (performance.now() - playSessionStart) / 60000; el('apmVal').innerText = dur > 0 ? Math.round(hits/dur) : 0; }
+  function showScoreModal() { let acc = hits + misses > 0 ? Math.round((hits/(hits+misses))*100) : 0; let r = hits > 0 ? Math.round(totalReactTime/hits) : 0; let dur = (performance.now() - playSessionStart) / 60000; let apm = dur > 0 ? Math.round(hits/dur) : 0; el('sm-acc').innerText = acc + "%"; el('sm-apm').innerText = apm; el('sm-react').innerText = r + " ms"; el('sm-combo').innerText = maxCombo; el('sm-hits').innerText = hits; el('sm-misses').innerText = misses; el('score-modal').style.display = 'block'; }
+  function closeScore() { el('score-modal').style.display = 'none'; }
+
+  function addLogSession() { 
+      if(!el('cfgSaveLogs').checked || (hits === 0 && misses === 0)) return; 
+      let acc = Math.round((hits/(hits+misses))*100); let r = hits > 0 ? Math.round(totalReactTime/hits) : 0; let dur = (performance.now() - playSessionStart) / 60000; let apm = dur > 0 ? Math.round(hits/dur) : 0; 
+      let act = document.querySelector('.preset-btn.active-preset'); let pName = act ? act.innerText.split(' (')[0] : 'Perso';
+      const n = new Date(); const dStr = `${n.getDate().toString().padStart(2,'0')}/${(n.getMonth()+1).toString().padStart(2,'0')} ${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}`; 
+      let logObj = { id: Date.now(), date: dStr, profile: pName, hits, misses, accuracy: acc, avgReact: r, apm };
+      let p = appState.profiles[appState.currentProfile]; if(!p) return; if(!p.logsNormal) p.logsNormal = []; if(!p.logsTryhard) p.logsTryhard = [];
+      if(appState.trainingMode === 'NORMAL') p.logsNormal.unshift(logObj); else p.logsTryhard.unshift(logObj);
+      saveTrainingConfig(); saveApp(); 
+  }
+
+  function renderLogs() { 
+      const b = el('logs-tbody'); b.innerHTML = ''; let p = appState.profiles[appState.currentProfile]; let logsToRender = appState.trainingMode === 'NORMAL' ? p.logsNormal : p.logsTryhard;
+      if(!logsToRender || !logsToRender.length) { b.innerHTML = '<tr><td colspan="7">Aucun log.</td></tr>'; el('log-total-sessions').innerText = 0; el('log-avg-acc').innerText = '0%'; el('log-avg-apm').innerText = 0; return; } 
+      let th = 0, tm = 0, tr = 0, nr = 0, ta = 0; 
+      logsToRender.forEach(log => { 
+          th += log.hits; tm += log.misses; if(log.hits > 0){ tr += log.avgReact; nr++; ta += log.apm; } 
+          const row = document.createElement('tr'); row.innerHTML = `<td>${log.date}</td><td>${log.profile}</td><td>${log.hits}</td><td>${log.accuracy}%</td><td>${log.avgReact}ms / ${log.apm} APM</td><td><button onclick="deleteLog(${log.id})">✖</button></td>`; b.appendChild(row); 
+      }); 
+      el('log-total-sessions').innerText = logsToRender.length; el('log-avg-acc').innerText = Math.round((th/(th+tm))*100) + '%'; el('log-avg-apm').innerText = nr > 0 ? Math.round(ta/nr) : 0; 
+  }
+  
+  function deleteLog(id) { 
+      if(confirm("Supprimer ?")) { let p = appState.profiles[appState.currentProfile]; if(appState.trainingMode === 'NORMAL') p.logsNormal = p.logsNormal.filter(l => l.id !== id); else p.logsTryhard = p.logsTryhard.filter(l => l.id !== id); saveTrainingConfig(); renderLogs(); } 
+  }
+
+  // --- INPUT BINDINGS ---
+  function formatMouseEvent(e) { 
+      let k = []; if(e.ctrlKey) k.push('CTRL'); if(e.altKey) k.push('ALT'); if(e.shiftKey) k.push('SHIFT'); 
+      let btn = (e.button === 0) ? 'M1' : (e.button === 1) ? 'M3' : (e.button === 2) ? 'M2' : (e.button === 3) ? 'M4' : 'M5'; k.push(btn); return k.join('+'); 
+  }
+  function formatKeyEvent(e) { 
+      if(['Control','Shift','Alt','Meta','CapsLock','Tab'].includes(e.key)) return null; 
+      let k = []; if(e.ctrlKey) k.push('CTRL'); if(e.altKey) k.push('ALT'); if(e.shiftKey) k.push('SHIFT'); 
+      let key = e.key.toUpperCase(); if(key === " ") key = "SPC"; 
+      k.push(key); return k.join('+'); 
+  }
+
+  window.addEventListener('wheel', (e) => { 
+      if(!isPlayMode && !listeningBoxId) return; e.preventDefault(); 
+      let k = []; if(e.ctrlKey) k.push('CTRL'); if(e.altKey) k.push('ALT'); if(e.shiftKey) k.push('SHIFT'); k.push(e.deltaY < 0 ? 'WU' : 'WD'); let bind = k.join('+'); 
+      
+      if(listeningBoxId) {
+          let d = getBoxData(listeningBoxId); d.bind = bind; if(!boxStats[bind]) boxStats[bind] = {h: 0, m: 0}; applyBoxVisuals(el(listeningBoxId), d); el(listeningBoxId).classList.remove('listening'); listeningBoxId = null; saveApp();
+      } else if(isPlayMode) { if(isProcessingInput) return; handlePlayInput(bind); } 
+  }, {passive: false});
+  
+  window.addEventListener('keydown', (e) => { 
+      if(isPlayMode && e.key === 'Escape') {
+          e.preventDefault();
+          togglePlayMode();
+          return;
+      }
+      simulateKeypress(formatKeyEvent(e));
+      if(['Delete','Backspace'].includes(e.key) && !isPlayMode && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') { let s = els('.box.selected'); if(s.length > 0) { promptDelete(Array.from(s)); e.preventDefault(); return; } }
+      if(editingSpellBoxId && e.key === 'Escape') { closeSpellModal(); return; } 
+      if(listeningBoxId || isPlayMode) { if(!['F5','F12'].includes(e.key)) e.preventDefault(); } 
+      let b = formatKeyEvent(e); if(!b) return; 
+      if(listeningBoxId && !isPlayMode) { let d = getBoxData(listeningBoxId); d.bind = b; if(!boxStats[b]) boxStats[b] = {h: 0, m: 0}; applyBoxVisuals(el(listeningBoxId), d); el(listeningBoxId).classList.remove('listening'); listeningBoxId = null; saveApp(); return; } 
+      handlePlayInput(b); 
+  }, {capture: true, passive: false});
+  
+  window.addEventListener('contextmenu', e => { if(isPlayMode || listeningBoxId) e.preventDefault(); });
+  window.addEventListener('resize', () => { updateBoardTransform(); renderAllBoxes(); });
+  
+  window.onload = initApp;
+</script>
+</body>
+</html>
