@@ -136,13 +136,19 @@
     .box-content { display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: none; width: 95%; z-index: 2; text-shadow: 1px 1px 2px #000; }
     .box-mod { color: #a6adc8; font-size: calc(var(--box-size) * 0.18); line-height: 1; }
     .box-key { color: var(--elvui-case-txt); font-size: calc(var(--box-size) * 0.40); font-weight: bold; line-height: 1; }
+    
     .box.selected { border-color: #89b4fa; box-shadow: inset 0 0 10px rgba(137,180,250,0.5); z-index: 50; }
     .box.active-target { border-color: var(--elvui-active-target) !important; box-shadow: 0 0 15px var(--elvui-active-target) !important; z-index: 100; }
     .box.group-hover { box-shadow: 0 0 10px #89b4fa, inset 0 0 8px #89b4fa !important; border-color: #89b4fa !important; }
     .ghost-box { position: absolute; width: var(--box-size); height: var(--box-size); border: 2px dashed rgba(137, 180, 250, 0.5); background: rgba(137, 180, 250, 0.2); pointer-events: none; z-index: 40; display: none;}
     .drag-invalid { border-color: var(--elvui-error) !important; background: rgba(210, 92, 106, 0.4) !important; }
     .box.listening { border-color: var(--elvui-bind-mode) !important; box-shadow: 0 0 15px var(--elvui-bind-mode) !important; z-index: 150;}
-    .box.quick-binding { border-color: var(--wow-yellow) !important; box-shadow: 0 0 20px var(--wow-yellow) !important; z-index: 200; }
+    
+    /* MODIFICATION : Effet visuel des touches pressées */
+    .box.pressed { transform: scale(0.92) !important; background-color: #f1c40f !important; filter: brightness(0.8) !important; border-color: #f1c40f !important; z-index: 200; box-shadow: inset 0 0 10px rgba(0,0,0,0.5) !important; transition: transform 0.05s, background-color 0.05s !important;}
+    
+    /* MODE SURVOL (HOVER BIND) */
+    body.keybind-mode .box:hover { border-color: var(--elvui-bind-mode) !important; box-shadow: 0 0 15px var(--elvui-bind-mode) !important; z-index: 150; }
 
     /* Séquences Badges */
     .sequence-badge { position: absolute; top: -8px; right: -8px; background: var(--wow-yellow); color: #000; border-radius: 50%; width: 22px; height: 22px; font-weight: bold; font-size: 14px; display: flex; justify-content: center; align-items: center; z-index: 200; box-shadow: 0 0 5px #000; border: 1px solid #11111b;}
@@ -257,8 +263,11 @@
       <div id="tut-text" style="font-size:14px; line-height:1.4">Texte</div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px">
           <button style="background:transparent; border:1px solid #45475a; color:#a6adc8; padding: 4px 8px; font-size:11px;" onclick="closeTutorial()">Fermer</button>
-          <div id="tut-dots" style="display:flex; gap:5px"></div>
-          <button id="tut-btn-next" class="btn-tut" onclick="nextTutorialStep()">Suivant</button>
+          <div style="display:flex; align-items:center; gap:8px;">
+              <button id="tut-btn-prev" style="background:#313244; color:#bac2de; border:none; padding:6px 10px; font-weight:bold; cursor:pointer; border-radius:2px; display:none;" onclick="prevTutorialStep()">◄ Préc.</button>
+              <div id="tut-dots" style="display:flex; gap:5px; margin: 0 5px;"></div>
+              <button id="tut-btn-next" class="btn-tut" onclick="nextTutorialStep()">Suivant</button>
+          </div>
       </div>
   </div>
 
@@ -295,9 +304,9 @@
 
   <div id="toolbar">
     <button class="btn-info" onclick="triggerInfoTutorial()">i</button>
-    <div id="tut-target-build" style="display:flex; gap:8px;">
+    <div id="tut-target-binds" style="display:flex; gap:8px;">
         <button onclick="addBox()" class="action-btn">+ Case</button>
-        <button onclick="startQuickBind()" id="btnQuickBind" class="action-btn" style="color: var(--wow-yellow);" title="Sélectionnez des cases et tapez vos raccourcis à la chaîne">⚡ Saisie Rapide</button>
+        <button onclick="toggleKeybindMode()" id="btnKeybindMode" class="action-btn" style="color: var(--elvui-bind-mode);" title="Survolez une case et tapez une touche pour l'assigner (Style ElvUI)">⌨️ Survol</button>
     </div>
     <div class="separator"></div>
     <div id="tut-target-liaison">
@@ -323,7 +332,10 @@
 
   <div id="settings-panel" class="floating-panel">
     <div id="tut-target-profils">
-        <div class="panel-title">Profil & Sauvegarde</div>
+        <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Profil & Sauvegarde</span>
+            <button onclick="launchTutorial('OPTIONS', true)" class="btn-info" style="width: 20px; height: 20px; font-size: 11px; margin: 0;" title="Tutoriel des options">i</button>
+        </div>
         <div class="panel-row">
             <select id="profile-selector" class="select-input" style="width: 100px; border: 1px solid #45475a;" onchange="loadProfile()"></select>
             <div><button onclick="createProfile()" style="padding:2px 6px;">Nouv</button><button onclick="renameProfile()" style="padding:2px 6px; color:#f9e2af;" title="Renommer">✎</button><button onclick="deleteProfile()" style="padding:2px 6px; color:var(--elvui-error);">Sup</button></div>
@@ -493,8 +505,7 @@
   let currentLives = 3;
   let activeTargets = []; 
   
-  let isQuickBinding = false;
-  let quickBindQueue = [];
+  let isKeybindMode = false;
   let dragPanel = null, dpOffsetX = 0, dpOffsetY = 0;
 
   const PRESET_KIIPEY_DATA = [
@@ -536,11 +547,11 @@
   let lastHitTime = 0;
 
   // ==========================================
-  // --- 3. TUTORIEL SEQUENCÉ V55 ---
+  // --- 3. TUTORIEL SEQUENCÉ V56 ---
   // ==========================================
   const tutorials = {
       MAIN: [
-          { target: 'tut-target-build', title: "1. L'Édition", text: "Créez vos cases avec <b>+ Case</b>. Déplacez-les librement ou sélectionnez-les au lasso. <br><br>💡 <b>Astuce Pro</b> : Utilisez le bouton <b>⚡ Saisie Rapide</b> après une sélection pour lier vos touches à la chaîne !" },
+          { target: 'tut-target-binds', title: "1. L'Édition", text: "Créez vos cases avec <b>+ Case</b>. Déplacez-les librement ou sélectionnez-les au lasso.<br><br>💡 <b>Astuce Pro</b> : Utilisez le bouton <b>⌨️ Survol</b> pour assigner vos touches à la volée, comme sur ElvUI !" },
           { target: 'instructions', title: "2. L'Assistant Intégré", text: "Gardez toujours un œil ici ! Cet encart vous indique <b>en temps réel</b> les contrôles et raccourcis disponibles selon vos actions." },
           { target: 'tut-target-liaison', title: "3. Les Barres", text: "Sélectionnez un groupe de cases et cliquez sur <b>🔗 Lier</b> pour les déplacer toutes ensemble comme une vraie barre d'actions." },
           { target: 'tut-target-taille-aimant', title: "4. La Grille", text: "Ajustez la taille de vos cases. <br><br>Gérez l'<b>Aimantation</b> pour aligner vos touches parfaitement. Les cases feront apparaître une grille fantôme en les déplaçant !" },
@@ -561,12 +572,12 @@
   let currentTutStep = 0, activeTutType = '';
   
   function triggerInfoTutorial() {
-      if (el('settings-panel').style.display === 'flex') launchTutorial('OPTIONS', true);
-      else launchTutorial('MAIN', true);
+      // MODIFICATION : Plus de if/else conditionnel, on lance directement MAIN
+      launchTutorial('MAIN', true);
   }
   
   function launchTutorial(type, force = false) { 
-      if (!force && localStorage.getItem('wow_elvui_tut55_' + type)) return; 
+      if (!force && localStorage.getItem('wow_elvui_tut56_' + type)) return; 
       if (type !== 'OPTIONS') el('settings-panel').style.display = 'none';
       el('logs-panel').style.display = 'none';
       
@@ -576,7 +587,7 @@
 
   function closeWelcomeModal() {
       el('welcome-modal').style.display = 'none';
-      if (!localStorage.getItem('wow_elvui_tut55_MAIN')) { launchTutorial('MAIN', false); }
+      if (!localStorage.getItem('wow_elvui_tut56_MAIN')) { launchTutorial('MAIN', false); }
   }
   
   function renderTutorialStep() { 
@@ -587,6 +598,9 @@
       
       const bn = el('tut-btn-next'); 
       if(currentTutStep === tutorials[activeTutType].length - 1) bn.innerText = "Compris ! ✔️"; else bn.innerText = "Suivant ➔"; 
+      
+      const bp = el('tut-btn-prev');
+      if(currentTutStep === 0) bp.style.display = 'none'; else bp.style.display = 'block';
       
       const targetEl = el(stepData.target);
       if(targetEl) {
@@ -599,10 +613,11 @@
       }
   }
   function nextTutorialStep() { if(currentTutStep < tutorials[activeTutType].length - 1) { currentTutStep++; renderTutorialStep(); } else closeTutorial(); }
+  function prevTutorialStep() { if(currentTutStep > 0) { currentTutStep--; renderTutorialStep(); } }
   function closeTutorial() { 
       el('tut-tooltip').style.display = 'none'; 
       el('spotlight-hole').style.display = 'none'; 
-      localStorage.setItem('wow_elvui_tut55_' + activeTutType, 'true'); 
+      localStorage.setItem('wow_elvui_tut56_' + activeTutType, 'true'); 
       document.body.classList.remove('tut-options-active');
   }
 
@@ -675,6 +690,7 @@
   function loadProfile(pName) { 
       if(typeof pName === 'string') appState.currentProfile = pName; else if(el('profile-selector')) appState.currentProfile = el('profile-selector').value; 
       let p = appState.profiles[appState.currentProfile]; boxesData = p.boxes || []; 
+      
       if(p.logsNormal || p.logsTryhard) { p.logs = (p.logsNormal || []).concat(p.logsTryhard || []); delete p.logsNormal; delete p.logsTryhard; }
       if(!p.logs) p.logs = []; 
       
@@ -707,15 +723,32 @@
       box.addEventListener('mouseleave', () => { hoveredBoxId = null; els('.box.group-hover').forEach(b => b.classList.remove('group-hover')); });
       
       box.addEventListener('dblclick', (e) => {
-          if(isPlayMode) return; e.stopPropagation();
-          isQuickBinding = false; // Annuler potentiel quick bind en cours
-          els('.box').forEach(b => b.classList.remove('listening', 'quick-binding')); 
+          if(isPlayMode || isKeybindMode) return; e.stopPropagation();
+          els('.box').forEach(b => b.classList.remove('listening')); 
           box.classList.add('listening'); listeningBoxId = box.id; updateBoxText(box, '...');
       });
       
       box.addEventListener('mousedown', (e) => {
-          if(isPlayMode) { if(activeTargets.length > 0 && activeTargets[0].id === box.id) handlePlayInput(formatMouseEvent(e)); return; } e.stopPropagation();
-          if(listeningBoxId) { let m = formatMouseEvent(e); if(m) { resolveBind(m); } return; }
+          if(isPlayMode) { if(activeTargets.length > 0 && activeTargets[0].id === box.id) handlePlayInput(formatMouseEvent(e)); return; } 
+          e.stopPropagation();
+          
+          if(isKeybindMode) {
+              e.preventDefault();
+              let m = formatMouseEvent(e);
+              if(m) assignBindDirectly(box.id, m);
+              return;
+          }
+
+          if(listeningBoxId) { 
+              let m = formatMouseEvent(e); 
+              if(m) { 
+                  assignBindDirectly(listeningBoxId, m);
+                  el(listeningBoxId).classList.remove('listening');
+                  listeningBoxId = null;
+              } 
+              return; 
+          }
+          
           if(e.button !== 0) return;
           if(!box.classList.contains('selected')) { els('.box.selected').forEach(b => b.classList.remove('selected')); box.classList.add('selected'); }
           isDraggingBox = true; startX = e.clientX; startY = e.clientY; dragGroupInfo = []; let toMove = new Set();
@@ -723,7 +756,7 @@
           toMove.forEach(b => { let dat = getBoxData(b.id); dragGroupInfo.push({el: b, startPx: dat.px, startPy: dat.py}); b.style.zIndex = 1000; });
           els('.box.group-hover').forEach(b => b.classList.remove('group-hover'));
       });
-      box.addEventListener('contextmenu', e => { if(isPlayMode || listeningBoxId) e.preventDefault(); });
+      box.addEventListener('contextmenu', e => { if(isPlayMode || listeningBoxId || isKeybindMode) e.preventDefault(); });
       el('board').appendChild(box);
   }
 
@@ -742,50 +775,69 @@
       }
   }
 
-  function updateBoxText(box, t) { const m = box.querySelector('.box-mod'), k = box.querySelector('.box-key'); if(!t || t === '?' || t === '...') { m.innerText = ''; k.innerText = t || '?'; } else { let p = t.split('+'); if(p.length > 1) { k.innerText = p.pop(); m.innerText = p.join('+'); } else { m.innerText = ''; k.innerText = t; } } }
+  // MODIFICATION : Nouvelle logique ultra solide pour le cas de la touche `+` seule ou en modifier (`CTRL++`)
+  function updateBoxText(box, t) {
+      const m = box.querySelector('.box-mod'), k = box.querySelector('.box-key'); 
+      if(!t || t === '?' || t === '...') { 
+          m.innerText = ''; k.innerText = t || '?'; 
+      } else { 
+          let p = t.split('+');
+          // Si on a tapé un '+' tout court, le split donnera ["", ""]
+          // Si on a "CTRL++", le split donnera ["CTRL", "", ""]
+          if (p[p.length - 1] === "") {
+              p.pop(); // Retire la chaîne vide à la fin
+              k.innerText = "+"; // Affiche explicitement le gros symbole
+              m.innerText = p.join('+'); // Affiche les modifiers éventuels (ex: CTRL)
+          } else {
+              k.innerText = p.pop(); 
+              m.innerText = p.join('+'); 
+          }
+      } 
+  }
+  
   function renderAllBoxes() { boxesData.forEach(d => { const b = el(d.id); if(b) { b.style.left = d.px + 'px'; b.style.top = d.py + 'px'; } }); }
   function updateBoardTransform() { el('board').style.transform = `translate(${panX}px, ${panY}px)`; el('workspace').style.setProperty('--pan-x', panX + 'px'); el('workspace').style.setProperty('--pan-y', panY + 'px'); }
   function isPixelOccupied(tPx, tPy, step, ignIds) { const m = step - 0.1; for(let d of boxesData) { if(ignIds.includes(d.id)) continue; if(Math.abs(tPx - d.px) < m && Math.abs(tPy - d.py) < m) return true; } return false; }
 
-  // --- SAISIE RAPIDE (QUICK-BIND) ---
-  function startQuickBind() {
+  // --- MODE SURVOL (HOVER BIND / ELVUI) ---
+  function toggleKeybindMode() {
       if(isPlayMode) return;
-      const sel = els('.box.selected');
-      if(sel.length === 0) return alert("Sélectionnez les cases au lasso ou au clic pour lancer la Saisie Rapide.");
+      isKeybindMode = !isKeybindMode;
+      const btn = el('btnKeybindMode');
       
-      // Tri intelligent : De haut en bas, puis de gauche à droite
-      quickBindQueue = Array.from(sel).sort((a,b) => {
-          let da = getBoxData(a.id), db = getBoxData(b.id);
-          if (Math.abs(da.py - db.py) > 20) return da.py - db.py;
-          return da.px - db.px;
-      });
-      
-      isQuickBinding = true;
-      els('.box').forEach(b => b.classList.remove('selected', 'listening', 'quick-binding'));
-      nextQuickBind();
+      if(isKeybindMode) {
+          btn.style.background = 'var(--elvui-bind-mode)';
+          btn.style.color = '#11111b';
+          btn.innerText = '✅ Fin Survol';
+          document.body.classList.add('keybind-mode');
+          showToast("Mode Survol activé (Survolez + Touche)");
+          
+          if(listeningBoxId) {
+              el(listeningBoxId).classList.remove('listening');
+              let d = getBoxData(listeningBoxId);
+              applyBoxVisuals(el(listeningBoxId), d);
+              listeningBoxId = null;
+          }
+          els('.box.selected').forEach(b => b.classList.remove('selected'));
+      } else {
+          btn.style.background = '#45475a';
+          btn.style.color = 'var(--elvui-bind-mode)';
+          btn.innerText = '⌨️ Survol';
+          document.body.classList.remove('keybind-mode');
+      }
   }
 
-  function nextQuickBind() {
-      if(listeningBoxId) { el(listeningBoxId).classList.remove('quick-binding', 'listening'); }
-      if(quickBindQueue.length === 0) { isQuickBinding = false; listeningBoxId = null; showToast("⚡ Saisie terminée"); return; }
+  function assignBindDirectly(id, bindStr) {
+      let d = getBoxData(id);
+      d.bind = bindStr;
+      if(bindStr !== '?' && !boxStats[bindStr]) boxStats[bindStr] = {h: 0, m: 0};
+      applyBoxVisuals(el(id), d);
+      saveApp();
       
-      let nextBox = quickBindQueue.shift();
-      listeningBoxId = nextBox.id;
-      nextBox.classList.add('quick-binding', 'listening');
-      updateBoxText(nextBox, '...');
+      let boxEl = el(id);
+      boxEl.classList.add('pulse-hit');
+      setTimeout(() => boxEl.classList.remove('pulse-hit'), 200);
   }
-
-  function resolveBind(bindStr) {
-      let d = getBoxData(listeningBoxId); 
-      d.bind = bindStr; 
-      if(!boxStats[bindStr]) boxStats[bindStr] = {h: 0, m: 0}; 
-      applyBoxVisuals(el(listeningBoxId), d); 
-      saveApp(); 
-      
-      if(isQuickBinding) { nextQuickBind(); } 
-      else { el(listeningBoxId).classList.remove('listening', 'quick-binding'); listeningBoxId = null; }
-  }
-
 
   // ==========================================
   // --- 7. SOURIS, PANNEAUX DRAGGABLE & CORBEILLE ---
@@ -805,7 +857,7 @@
 
       if(e.target.closest('.floating-panel') || e.target.closest('#toolbar')) return;
 
-      if(isPlayMode) return; 
+      if(isPlayMode || isKeybindMode) return; 
       if(e.button === 1 || e.button === 2) { isPanning = true; panStartX = e.clientX; panStartY = e.clientY; el('workspace').classList.add('panning'); e.preventDefault(); return; } 
       if(e.target === el('workspace') && e.button === 0) { isLassoing = true; const r = el('workspace').getBoundingClientRect(); startX = e.clientX - r.left; startY = e.clientY - r.top; const lasso = el('selection-lasso'); lasso.style.left = startX + 'px'; lasso.style.top = startY + 'px'; lasso.style.width = '0px'; lasso.style.height = '0px'; lasso.style.display = 'block'; if(!e.shiftKey) els('.box.selected').forEach(b => b.classList.remove('selected')); } 
   });
@@ -817,7 +869,7 @@
           return;
       }
 
-      if(isPlayMode) return; 
+      if(isPlayMode || isKeybindMode) return; 
       if(isPanning) { panX += (e.clientX - panStartX); panY += (e.clientY - panStartY); panStartX = e.clientX; panStartY = e.clientY; updateBoardTransform(); return; } 
       
       const sz = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--box-size')), stp = sz + 2; 
@@ -902,7 +954,7 @@
   function loadSettings() { const sz = localStorage.getItem('wow_elvui_trainer_size'); if(sz) { el('sizeSlider').value = sz; el('sizeInput').value = sz; document.documentElement.style.setProperty('--box-size', sz+'px'); } else { document.documentElement.style.setProperty('--box-size', '40px'); } const sn = localStorage.getItem('wow_elvui_trainer_snap'); if(sn) el('snapDivisor').value = sn; updateBoardTransform(); }
   function saveTrainingConfig() { localStorage.setItem('wow_elvui_v48_cfg', JSON.stringify({ sound: el('cfgSound').checked, scale: el('cfgFontScale').value, saveLogs: el('cfgSaveLogs').checked, sprint: el('cfgSprint').value, rhythm: el('cfgRhythm').checked, blind: el('cfgBlind').checked, seq: el('cfgSequence').value, surv: el('cfgSurvival').checked, sp: el('cfgStartSpeed').value, st: el('cfgStep').value, to: el('cfgTimeout').value })); }
   function loadTrainingConfig() { let s = localStorage.getItem('wow_elvui_v48_cfg') || localStorage.getItem('wow_elvui_v46_cfg'); if(s){ let c = JSON.parse(s); if(el('cfgSound')) el('cfgSound').checked = c.sound !== false; if(el('cfgFontScale')) el('cfgFontScale').value = c.scale || 100; if(el('cfgSaveLogs')) el('cfgSaveLogs').checked = c.saveLogs !== false; if(el('cfgSprint')) el('cfgSprint').value = c.sprint || "0"; if(el('cfgRhythm')) el('cfgRhythm').checked = c.rhythm || false; if(el('cfgBlind')) el('cfgBlind').checked = c.blind || false; if(el('cfgSequence')) el('cfgSequence').value = c.seq || 1; if(el('cfgSurvival')) el('cfgSurvival').checked = c.surv || false; if(el('cfgStartSpeed')) el('cfgStartSpeed').value = c.sp || 1000; if(el('cfgStep')) el('cfgStep').value = c.st || 20; if(el('cfgTimeout')) el('cfgTimeout').value = c.to || 2000; updatePresetHighlight(); } else { setDifficulty(1500,0,3000, null); } applyFontScale(); }
-  function toggleSettingsPanel() { const s = el('settings-panel').style; if(s.display === 'flex') { s.display = 'none'; if(activeTutType === 'OPTIONS') closeTutorial(); } else { s.display = 'flex'; el('logs-panel').style.display = 'none'; el('feedback-modal').style.display = 'none'; if (!localStorage.getItem('wow_elvui_tut53_OPTIONS')) launchTutorial('OPTIONS', false); } }
+  function toggleSettingsPanel() { const s = el('settings-panel').style; if(s.display === 'flex') { s.display = 'none'; if(activeTutType === 'OPTIONS') closeTutorial(); } else { s.display = 'flex'; el('logs-panel').style.display = 'none'; el('feedback-modal').style.display = 'none'; if (!localStorage.getItem('wow_elvui_tut56_OPTIONS')) launchTutorial('OPTIONS', false); } }
   function toggleLogsPanel() { const s = el('logs-panel').style; s.display = s.display === 'flex' ? 'none' : 'flex'; el('settings-panel').style.display = 'none'; el('feedback-modal').style.display = 'none'; if(s.display === 'flex') renderLogs(); }
   function applyFontScale() { document.documentElement.style.setProperty('--font-scale', el('cfgFontScale').value/100); saveTrainingConfig(); }
   function setDifficulty(sp, st, to, btn) { el('cfgStartSpeed').value = sp; el('cfgStep').value = st; el('cfgTimeout').value = to; saveTrainingConfig(); els('.preset-btn').forEach(b => b.classList.remove('active-preset')); if(btn) btn.classList.add('active-preset'); }
@@ -910,7 +962,7 @@
   function updatePresetHighlight() { const sp = el('cfgStartSpeed').value, st = el('cfgStep').value, to = el('cfgTimeout').value; els('.preset-btn').forEach(b => b.classList.remove('active-preset')); if(sp==1500 && st==0 && to==3000) { els('.preset-btn')[0].classList.add('active-preset'); } else if(sp==1000 && st==10 && to==2000) { els('.preset-btn')[1].classList.add('active-preset'); } else if(sp==700 && st==10 && to==1500) { els('.preset-btn')[2].classList.add('active-preset'); } else if(sp==500 && st==5 && to==1000) { els('.preset-btn')[3].classList.add('active-preset'); } else if(sp==300 && st==0 && to==800) { els('.preset-btn')[4].classList.add('active-preset'); } }
 
   // ==========================================
-  // --- 10. MOTEUR D'ENTRAÎNEMENT (V55) ---
+  // --- 9. MOTEUR D'ENTRAÎNEMENT (V56) ---
   // ==========================================
   function spawnFCT(elBox, rTime, type, pts) { 
       const f = document.createElement('div'); 
@@ -920,7 +972,18 @@
       elBox.appendChild(f); setTimeout(() => f.remove(), 1000); 
   }
   
-  function simulateKeypress(bindStr) { if(!bindStr) return; const d = boxesData.find(b => b.bind === bindStr); if(d) { const bEl = el(d.id); if(bEl) { bEl.classList.add('pressed'); setTimeout(() => bEl.classList.remove('pressed'), 100); } } }
+  // MODIFICATION : Permet d'enfoncer toutes les touches qui correspondent, de façon visible
+  function simulateKeypress(bindStr) { 
+      if(!bindStr) return; 
+      const found = boxesData.filter(b => b.bind === bindStr); 
+      found.forEach(d => { 
+          const bEl = el(d.id); 
+          if(bEl) { 
+              bEl.classList.add('pressed'); 
+              setTimeout(() => bEl.classList.remove('pressed'), 100); 
+          } 
+      }); 
+  }
   
   function updateCombo(isHit) {
       const cc = el('combo-counter');
@@ -973,7 +1036,6 @@
           sessionStats[bind].h++; sessionStats[bind].rt += rTime;
           if(boxStats[bind]) boxStats[bind].h++; 
           
-          // CALCUL DU SCORE (V55)
           let pts = 10;
           if(rTime <= 250) pts = 100;
           else if(rTime <= 500) pts = 50;
@@ -1034,7 +1096,8 @@
       const b = el('modeBtn');
       if(!isPlayMode) {
           if(!boxesData.length) return alert("Ajoutez des cases d'abord."); 
-          if(!boxesData.some(d => d.bind !== '?' && d.bind !== '')) return alert("Assignez vos touches (Double-clic) d'abord.");
+          if(!boxesData.some(d => d.bind !== '?' && d.bind !== '')) return alert("Assignez vos touches d'abord.");
+          if(isKeybindMode) toggleKeybindMode();
           
           initAudio(); el('settings-panel').style.display = 'none'; el('logs-panel').style.display = 'none'; el('feedback-modal').style.display = 'none';
           
@@ -1114,7 +1177,6 @@
       el('apmVal').innerText = apm; 
       el('scoreVal').innerText = score;
       
-      // BLOODLUST EFFECT V55
       if (currentCombo >= 50 || apm >= 100) { document.body.classList.add('bloodlust'); } 
       else { document.body.classList.remove('bloodlust'); }
   }
@@ -1202,26 +1264,70 @@
   function formatKeyEvent(e) { if(['Control','Shift','Alt','Meta','CapsLock','Tab'].includes(e.key)) return null; let k = []; if(e.ctrlKey) k.push('CTRL'); if(e.altKey) k.push('ALT'); if(e.shiftKey) k.push('SHIFT'); let key = e.key.toUpperCase(); if(key === " ") key = "SPC"; k.push(key); return k.join('+'); }
 
   window.addEventListener('wheel', (e) => { 
-      if(!isPlayMode && !listeningBoxId) return; e.preventDefault(); 
+      // Ignorer si on est dans un panneau scrollable (Historique ou Options)
+      if(e.target.closest('.floating-panel') || e.target.closest('#welcome-modal') || e.target.closest('#score-modal')) return;
+      
+      if(!isPlayMode && !listeningBoxId && !isKeybindMode) return; 
+      e.preventDefault(); 
       let k = []; if(e.ctrlKey) k.push('CTRL'); if(e.altKey) k.push('ALT'); if(e.shiftKey) k.push('SHIFT'); k.push(e.deltaY < 0 ? 'WU' : 'WD'); let bind = k.join('+'); 
-      if(listeningBoxId) { resolveBind(bind); } else if(isPlayMode) { if(isProcessingInput) return; handlePlayInput(bind); } 
+      
+      // MODIFICATION : Retour visuel immédiat même hors jeu ou sur molette
+      simulateKeypress(bind);
+
+      if(isKeybindMode && hoveredBoxId) { assignBindDirectly(hoveredBoxId, bind); return; }
+      if(listeningBoxId) { 
+          assignBindDirectly(listeningBoxId, bind); 
+          el(listeningBoxId).classList.remove('listening'); 
+          listeningBoxId = null; 
+      } 
+      else if(isPlayMode) { if(isProcessingInput) return; handlePlayInput(bind); } 
   }, {passive: false});
   
   window.addEventListener('keydown', (e) => { 
-      if(isPlayMode && e.key === 'Escape') { e.preventDefault(); togglePlayMode(); return; }
+      // Ignorer si on tape dans un champ texte (ex: nom du profil)
+      if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+      // MODIFICATION : BLOCAGE AGRESSIF INCONDITIONNEL
+      // On bloque tout sauf Echap et F12 (pour la console dév)
+      if(e.key !== 'Escape' && e.key !== 'F12') {
+          e.preventDefault();
+      }
+
+      if(isPlayMode && e.key === 'Escape') { togglePlayMode(); return; }
       simulateKeypress(formatKeyEvent(e));
-      if(['Delete','Backspace'].includes(e.key) && !isPlayMode && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') { let s = els('.box.selected'); if(s.length > 0) { promptDelete(Array.from(s)); e.preventDefault(); return; } }
-      if(listeningBoxId || isPlayMode) { if(!['F5','F12'].includes(e.key)) e.preventDefault(); } 
       
-      // V55 : Annuler le Quick-Bind avec Echap
-      if(isQuickBinding && e.key === 'Escape') { isQuickBinding = false; el(listeningBoxId).classList.remove('listening', 'quick-binding'); listeningBoxId = null; showToast("Saisie annulée"); return; }
+      if(['Delete','Backspace'].includes(e.key) && !isPlayMode) { 
+          let s = els('.box.selected'); if(s.length > 0) { promptDelete(Array.from(s)); return; } 
+      }
+      
+      if(isKeybindMode && e.key === 'Escape') { 
+          if(hoveredBoxId) { assignBindDirectly(hoveredBoxId, '?'); } 
+          else { toggleKeybindMode(); } 
+          return; 
+      }
+      
+      if(listeningBoxId && e.key === 'Escape') { 
+          el(listeningBoxId).classList.remove('listening'); 
+          listeningBoxId = null; 
+          showToast("Saisie annulée"); 
+          return; 
+      }
       
       let b = formatKeyEvent(e); if(!b) return; 
-      if(listeningBoxId && !isPlayMode) { resolveBind(b); return; } 
+      
+      if(isKeybindMode && hoveredBoxId) { assignBindDirectly(hoveredBoxId, b); return; }
+      
+      if(listeningBoxId && !isPlayMode) { 
+          assignBindDirectly(listeningBoxId, b); 
+          el(listeningBoxId).classList.remove('listening'); 
+          listeningBoxId = null; 
+          return; 
+      } 
+      
       handlePlayInput(b); 
   }, {capture: true, passive: false});
   
-  window.addEventListener('contextmenu', e => { if(isPlayMode || listeningBoxId) e.preventDefault(); });
+  window.addEventListener('contextmenu', e => { if(isPlayMode || listeningBoxId || isKeybindMode) e.preventDefault(); });
   window.addEventListener('resize', () => { updateBoardTransform(); renderAllBoxes(); });
   
   window.onload = initApp;
