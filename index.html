@@ -144,10 +144,9 @@
     .drag-invalid { border-color: var(--elvui-error) !important; background: rgba(210, 92, 106, 0.4) !important; }
     .box.listening { border-color: var(--elvui-bind-mode) !important; box-shadow: 0 0 15px var(--elvui-bind-mode) !important; z-index: 150;}
     
-    /* MODIFICATION : Effet visuel des touches pressées */
     .box.pressed { transform: scale(0.92) !important; background-color: #f1c40f !important; filter: brightness(0.8) !important; border-color: #f1c40f !important; z-index: 200; box-shadow: inset 0 0 10px rgba(0,0,0,0.5) !important; transition: transform 0.05s, background-color 0.05s !important;}
     
-    /* MODE SURVOL (HOVER BIND) */
+    /* MODE RACCOURCIS (HOVER BIND) */
     body.keybind-mode .box:hover { border-color: var(--elvui-bind-mode) !important; box-shadow: 0 0 15px var(--elvui-bind-mode) !important; z-index: 150; }
 
     /* Séquences Badges */
@@ -306,7 +305,7 @@
     <button class="btn-info" onclick="triggerInfoTutorial()">i</button>
     <div id="tut-target-binds" style="display:flex; gap:8px;">
         <button onclick="addBox()" class="action-btn">+ Case</button>
-        <button onclick="toggleKeybindMode()" id="btnKeybindMode" class="action-btn" style="color: var(--elvui-bind-mode);" title="Survolez une case et tapez une touche pour l'assigner (Style ElvUI)">⌨️ Survol</button>
+        <button onclick="toggleKeybindMode()" id="btnKeybindMode" class="action-btn" style="color: var(--elvui-bind-mode);" title="Active le Mode Raccourcis (Style ElvUI)">⌨️ Raccourcis</button>
     </div>
     <div class="separator"></div>
     <div id="tut-target-liaison">
@@ -317,7 +316,7 @@
     
     <div id="tut-target-taille-aimant" style="display:flex; gap:8px;">
         <div class="setting-group">Taille:<input type="range" id="sizeSlider" min="20" max="150" value="40" oninput="updateSizeFromSlider()"><input type="number" id="sizeInput" class="size-input" value="40" onchange="updateSizeFromInput()"></div>
-        <div class="setting-group">Aimant: <select id="snapDivisor" class="select-input" onchange="saveSettings()"><option value="1">Grille Stricte</option><option value="2">Souple</option><option value="5">Très Souple</option><option value="20">Libre</option></select></div>
+        <div class="setting-group">Aimant: <select id="snapDivisor" class="select-input" onchange="saveSettings()"><option value="1">Grille Stricte</option><option value="2">Souple</option><option value="5">Très Souple</option><option value="20" selected>Libre</option></select></div>
     </div>
     
     <div class="separator"></div>
@@ -508,22 +507,7 @@
   let isKeybindMode = false;
   let dragPanel = null, dpOffsetX = 0, dpOffsetY = 0;
 
-  const PRESET_KIIPEY_DATA = [
-      {id:"box-43",px:798,py:1554,bind:"&",group:"bar4"}, {id:"box-44",px:840,py:1554,bind:"É",group:"bar4"},
-      {id:"box-45",px:924,py:1554,bind:"\"",group:"bar4"}, {id:"box-46",px:966,py:1554,bind:"'",group:"bar4"},
-      {id:"box-47",px:1008,py:1554,bind:"(",group:"bar4"}, {id:"box-48",px:840,py:1638,bind:"4",group:"bar4"},
-      {id:"box-49",px:882,py:1638,bind:"5",group:"bar4"}, {id:"box-50",px:924,py:1638,bind:"6",group:"bar4"},
-      {id:"box-51",px:966,py:1638,bind:"7",group:"bar4"}, {id:"box-52",px:1008,py:1638,bind:"8",group:"bar4"},
-      {id:"box-53",px:798,py:1596,bind:"CTRL+&",group:"bar4"}, {id:"box-54",px:840,py:1596,bind:"CTRL+É",group:"bar4"},
-      {id:"box-55",px:924,py:1596,bind:"CTRL+\"",group:"bar4"}, {id:"box-56",px:966,py:1596,bind:"CTRL+'",group:"bar4"},
-      {id:"box-57",px:1008,py:1596,bind:"CTRL+(",group:"bar4"}, {id:"box-58",px:840,py:1680,bind:"CTRL+4",group:"bar4"},
-      {id:"box-59",px:882,py:1680,bind:"CTRL+5",group:"bar4"}, {id:"box-60",px:924,py:1680,bind:"CTRL+6",group:"bar4"},
-      {id:"box-61",px:966,py:1680,bind:"CTRL+7",group:"bar4"}, {id:"box-62",px:1008,py:1680,bind:"9",group:"bar4"},
-      {id:"box-63",px:714,py:1638,bind:"1",group:"bar4"}, {id:"box-64",px:756,py:1638,bind:"2",group:"bar4"},
-      {id:"box-65",px:798,py:1638,bind:"3",group:"bar4"}, {id:"box-66",px:714,py:1680,bind:"CTRL+1",group:"bar4"},
-      {id:"box-67",px:756,py:1680,bind:"CTRL+2",group:"bar4"}, {id:"box-68",px:798,py:1680,bind:"CTRL+3",group:"bar4"},
-      {id:"box-69",px:882,py:1554,bind:"Z",group:"bar4"}, {id:"box-70",px:882,py:1596,bind:"S",group:"bar4"}
-  ];
+  const PRESET_KIIPEY_B64 = "JTdCJTIyYm94ZXMlMjIlM0ElNUIlN0IlMjJpZCUyMiUzQSUyMmJveC0xJTIyJTJDJTIycHglMjIlM0EtMTI2JTJDJTIycHklMjIlM0EyMTAlMkMlMjJiaW5kJTIyJTNBJTIyRjUlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMiUyMiUyQyUyMnB4JTIyJTNBLTg0JTJDJTIycHklMjIlM0EyMTAlMkMlMjJiaW5kJTIyJTNBJTIyRjYlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMyUyMiUyQyUyMnB4JTIyJTNBLTQyJTJDJTIycHklMjIlM0EyMTAlMkMlMjJiaW5kJTIyJTNBJTIyRjclMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtNCUyMiUyQyUyMnB4JTIyJTNBMCUyQyUyMnB5JTIyJTNBMjEwJTJDJTIyYmluZCUyMiUzQSUyMkY4JTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTUlMjIlMkMlMjJweCUyMiUzQS0xNjglMkMlMjJweSUyMiUzQTI1MiUyQyUyMmJpbmQlMjIlM0ElMjIlMjYlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtNiUyMiUyQyUyMnB4JTIyJTNBLTEyNiUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMiVDMyU4OSUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC03JTIyJTJDJTIycHglMjIlM0EtODQlMkMlMjJweSUyMiUzQTI1MiUyQyUyMmJpbmQlMjIlM0ElMjIlNUMlMjIlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtOCUyMiUyQyUyMnB4JTIyJTNBLTQyJTJDJTIycHklMjIlM0EyNTIlMkMlMjJiaW5kJTIyJTNBJTIyJyUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC05JTIyJTJDJTIycHglMjIlM0EwJTJDJTIycHklMjIlM0EyNTIlMkMlMjJiaW5kJTIyJTNBJTIyKCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0xMCUyMiUyQyUyMnB4JTIyJTNBLTE2OCUyQyUyMnB5JTIyJTNBMjk0JTJDJTIyYmluZCUyMiUzQSUyMiVDMyU4MCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0xMSUyMiUyQyUyMnB4JTIyJTNBLTQyJTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyRjEwJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTEyJTIyJTJDJTIycHglMjIlM0EwJTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyRjExJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTEzJTIyJTJDJTIycHglMjIlM0E4NCUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMjElMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTQlMjIlMkMlMjJweCUyMiUzQTEyNiUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMjIlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTUlMjIlMkMlMjJweCUyMiUzQTE2OCUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMjMlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTYlMjIlMkMlMjJweCUyMiUzQTIxMCUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMkNUUkwlMkIzJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTE3JTIyJTJDJTIycHglMjIlM0E4NCUyQyUyMnB5JTIyJTNBMjk0JTJDJTIyYmluZCUyMiUzQSUyMjQlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTglMjIlMkMlMjJweCUyMiUzQTEyNiUyQyUyMnB5JTIyJTNBMjk0JTJDJTIyYmluZCUyMiUzQSUyMjUlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTklMjIlMkMlMjJweCUyMiUzQTE2OCUyQyUyMnB5JTIyJTNBMjk0JTJDJTIyYmluZCUyMiUzQSUyMjYlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjAlMjIlMkMlMjJweCUyMiUzQTg0JTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyNyUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0yMSUyMiUyQyUyMnB4JTIyJTNBMTI2JTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyOCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0yMiUyMiUyQyUyMnB4JTIyJTNBMTY4JTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyOSUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0yMyUyMiUyQyUyMnB4JTIyJTNBNTQ2JTJDJTIycHklMjIlM0E0NjIlMkMlMjJiaW5kJTIyJTNBJTIyLSUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0yNCUyMiUyQyUyMnB4JTIyJTNBNTg4JTJDJTIycHklMjIlM0E0NjIlMkMlMjJiaW5kJTIyJTNBJTIyQ1RSTCUyQi0lMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjUlMjIlMkMlMjJweCUyMiUzQTU0NiUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMiolMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjYlMjIlMkMlMjJweCUyMiUzQTU4OCUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMkNUUkwlMkIqJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTI3JTIyJTJDJTIycHglMjIlM0E1NDYlMkMlMjJweSUyMiUzQTU0NiUyQyUyMmJpbmQlMjIlM0ElMjIlMkIlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjglMjIlMkMlMjJweCUyMiUzQTU4OCUyQyUyMnB5JTIyJTNBNTQ2JTJDJTIyYmluZCUyMiUzQSUyMkNUUkwlMkIlMkIlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjklMjIlMkMlMjJweCUyMiUzQS01ODglMkMlMjJweSUyMiUzQTU0NiUyQyUyMmJpbmQlMjIlM0ElMjIlM0YlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMzAlMjIlMkMlMjJweCUyMiUzQS01NDYlMkMlMjJweSUyMiUzQTU0NiUyQyUyMmJpbmQlMjIlM0ElMjIlM0YlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMzElMjIlMkMlMjJweCUyMiUzQS01MDQlMkMlMjJweSUyMiUzQTU0NiUyQyUyMmJpbmQlMjIlM0ElMjJERUFEJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTMyJTIyJTJDJTIycHglMjIlM0EtNDYyJTJDJTIycHklMjIlM0E1NDYlMkMlMjJiaW5kJTIyJTNBJTIyJTNEJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTMzJTIyJTJDJTIycHglMjIlM0EtNTg4JTJDJTIycHklMjIlM0E1MDQlMkMlMjJiaW5kJTIyJTNBJTIyJTNGJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTM0JTIyJTJDJTIycHglMjIlM0EtNTQ2JTJDJTIycHklMjIlM0E1MDQlMkMlMjJiaW5kJTIyJTNBJTIyJTNGJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTM1JTIyJTJDJTIycHglMjIlM0EtNTA0JTJDJTIycHklMjIlM0E1MDQlMkMlMjJiaW5kJTIyJTNBJTIyJTNGJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTM2JTIyJTJDJTIycHglMjIlM0EtNDYyJTJDJTIycHklMjIlM0E1MDQlMkMlMjJiaW5kJTIyJTNBJTIyJTNGJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTM3JTIyJTJDJTIycHglMjIlM0EtNTg4JTJDJTIycHklMjIlM0E0NjIlMkMlMjJiaW5kJTIyJTNBJTIyJTNGJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTM4JTIyJTJDJTIycHglMjIlM0EtNTQ2JTJDJTIycHklMjIlM0E0NjIlMkMlMjJiaW5kJTIyJTNBJTIyJTNGJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTM5JTIyJTJDJTIycHglMjIlM0EtNTA0JTJDJTIycHklMjIlM0E0NjIlMkMlMjJiaW5kJTIyJTNBJTIyJTNGJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTQwJTIyJTJDJTIycHglMjIlM0EtNDYyJTJDJTIycHklMjIlM0E0NjIlMkMlMjJiaW5kJTIyJTNBJTIyJTNDJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCU1RCUyQyUyMmxvZ3MlMjIlM0ElNUIlN0IlMjJpZCUyMiUzQTE3NzU0ODk5ODM0NjUlMkMlMjJkYXRlJTIyJTNBJTIyMDYlMkYwNCUyMDE3JTNBMzklMjIlMkMlMjJwcm9maWxlJTIyJTNBJTIyRCVDMyVBOXRlbnRlJTIyJTJDJTIyaGl0cyUyMiUzQTc2JTJDJTIybWlzc2VzJTIyJTNBMTMlMkMlMjJhY2N1cmFjeSUyMiUzQTg1JTJDJTIyYXZnUmVhY3QlMjIlM0ExMzI2JTJDJTIyYXBtJTIyJTNBMzAlMkMlMjJzY29yZSUyMiUzQTk0MyU3RCU1RCUyQyUyMmNhbVglMjIlM0E4OTglMkMlMjJjYW1ZJTIyJTNBMTk2LjUlN0Q=";
 
   function loadCommunityPreset(type) {
       let pName = type === 'Kiipey' ? 'Profil Kiipey' : 'Standard MMO';
@@ -531,7 +515,12 @@
       
       let newBoxes = []; let newPanX = 0, newPanY = 0;
       if(type === 'Kiipey') {
-          try { newBoxes = JSON.parse(JSON.stringify(PRESET_KIIPEY_DATA)); newPanX = 79; newPanY = -1000.5; } catch(e) { console.error(e); }
+          try { 
+              let parsed = JSON.parse(decodeURIComponent(atob(PRESET_KIIPEY_B64)));
+              newBoxes = parsed.boxes; 
+              newPanX = parsed.camX || 0; 
+              newPanY = parsed.camY || 0; 
+          } catch(e) { console.error(e); }
       } else if(type === 'MMO') {
           const binds = ['1','2','3','4','5','6','7','8','9','0',')','=']; const stp = 42; let cId = 100;
           for(let i=0; i<12; i++) newBoxes.push({ id:'b'+cId++, px:i*stp, py:0, bind:binds[i], group:'mmo1'});
@@ -551,7 +540,7 @@
   // ==========================================
   const tutorials = {
       MAIN: [
-          { target: 'tut-target-binds', title: "1. L'Édition", text: "Créez vos cases avec <b>+ Case</b>. Déplacez-les librement ou sélectionnez-les au lasso.<br><br>💡 <b>Astuce Pro</b> : Utilisez le bouton <b>⌨️ Survol</b> pour assigner vos touches à la volée, comme sur ElvUI !" },
+          { target: 'tut-target-binds', title: "1. L'Édition", text: "Créez vos cases avec <b>+ Case</b>. Déplacez-les librement ou sélectionnez-les au lasso.<br><br>💡 <b>Astuce Pro</b> : Utilisez le bouton <b>⌨️ Raccourcis</b> pour assigner vos touches à la volée, comme sur ElvUI !" },
           { target: 'instructions', title: "2. L'Assistant Intégré", text: "Gardez toujours un œil ici ! Cet encart vous indique <b>en temps réel</b> les contrôles et raccourcis disponibles selon vos actions." },
           { target: 'tut-target-liaison', title: "3. Les Barres", text: "Sélectionnez un groupe de cases et cliquez sur <b>🔗 Lier</b> pour les déplacer toutes ensemble comme une vraie barre d'actions." },
           { target: 'tut-target-taille-aimant', title: "4. La Grille", text: "Ajustez la taille de vos cases. <br><br>Gérez l'<b>Aimantation</b> pour aligner vos touches parfaitement. Les cases feront apparaître une grille fantôme en les déplaçant !" },
@@ -572,7 +561,6 @@
   let currentTutStep = 0, activeTutType = '';
   
   function triggerInfoTutorial() {
-      // MODIFICATION : Plus de if/else conditionnel, on lance directement MAIN
       launchTutorial('MAIN', true);
   }
   
@@ -775,19 +763,16 @@
       }
   }
 
-  // MODIFICATION : Nouvelle logique ultra solide pour le cas de la touche `+` seule ou en modifier (`CTRL++`)
   function updateBoxText(box, t) {
       const m = box.querySelector('.box-mod'), k = box.querySelector('.box-key'); 
       if(!t || t === '?' || t === '...') { 
           m.innerText = ''; k.innerText = t || '?'; 
       } else { 
           let p = t.split('+');
-          // Si on a tapé un '+' tout court, le split donnera ["", ""]
-          // Si on a "CTRL++", le split donnera ["CTRL", "", ""]
           if (p[p.length - 1] === "") {
-              p.pop(); // Retire la chaîne vide à la fin
-              k.innerText = "+"; // Affiche explicitement le gros symbole
-              m.innerText = p.join('+'); // Affiche les modifiers éventuels (ex: CTRL)
+              p.pop(); 
+              k.innerText = "+"; 
+              m.innerText = p.join('+'); 
           } else {
               k.innerText = p.pop(); 
               m.innerText = p.join('+'); 
@@ -799,7 +784,7 @@
   function updateBoardTransform() { el('board').style.transform = `translate(${panX}px, ${panY}px)`; el('workspace').style.setProperty('--pan-x', panX + 'px'); el('workspace').style.setProperty('--pan-y', panY + 'px'); }
   function isPixelOccupied(tPx, tPy, step, ignIds) { const m = step - 0.1; for(let d of boxesData) { if(ignIds.includes(d.id)) continue; if(Math.abs(tPx - d.px) < m && Math.abs(tPy - d.py) < m) return true; } return false; }
 
-  // --- MODE SURVOL (HOVER BIND / ELVUI) ---
+  // --- MODE RACCOURCIS (HOVER BIND / ELVUI) ---
   function toggleKeybindMode() {
       if(isPlayMode) return;
       isKeybindMode = !isKeybindMode;
@@ -808,9 +793,11 @@
       if(isKeybindMode) {
           btn.style.background = 'var(--elvui-bind-mode)';
           btn.style.color = '#11111b';
-          btn.innerText = '✅ Fin Survol';
+          btn.innerText = '✅ Fin Raccourcis';
           document.body.classList.add('keybind-mode');
-          showToast("Mode Survol activé (Survolez + Touche)");
+          showToast("Mode Raccourcis activé");
+          
+          el('inst-text').innerHTML = "⌨️ <b>MODE RACCOURCIS</b> : Survolez une case et appuyez sur une touche pour l'assigner. <b>Echap</b> sur une case la vide.";
           
           if(listeningBoxId) {
               el(listeningBoxId).classList.remove('listening');
@@ -822,8 +809,10 @@
       } else {
           btn.style.background = '#45475a';
           btn.style.color = 'var(--elvui-bind-mode)';
-          btn.innerText = '⌨️ Survol';
+          btn.innerText = '⌨️ Raccourcis';
           document.body.classList.remove('keybind-mode');
+          
+          el('inst-text').innerHTML = "💡 <b>OUTILS</b> : 🖱️ Clic/Lasso = Sélection. <b>Clic Droit + Glisser</b> = Caméra. <b>Double-Clic</b> = Assigner Raccourci. Glisser en bas = 🗑️ Supprimer.";
       }
   }
 
@@ -843,12 +832,13 @@
   // --- 7. SOURIS, PANNEAUX DRAGGABLE & CORBEILLE ---
   // ==========================================
   document.addEventListener('mousedown', (e) => {
-      // DRAG PANELS
       if (!isPlayMode && e.target.classList.contains('panel-title')) {
           dragPanel = e.target.closest('.floating-panel');
           const rect = dragPanel.getBoundingClientRect();
           dpOffsetX = e.clientX - rect.left;
           dpOffsetY = e.clientY - rect.top;
+          dragPanel.style.left = rect.left + 'px';
+          dragPanel.style.top = rect.top + 'px';
           dragPanel.style.right = 'auto'; 
           dragPanel.style.bottom = 'auto';
           e.preventDefault(); 
@@ -951,7 +941,7 @@
   // ==========================================
   function toggleHeatmap() { showHeatmap = !showHeatmap; el('btnHeatmap').style.fontWeight = showHeatmap ? 'bold' : 'normal'; boxesData.forEach(d => applyBoxVisuals(el(d.id), d)); }
   function saveSettings() { localStorage.setItem('wow_elvui_trainer_size', el('sizeSlider').value); localStorage.setItem('wow_elvui_trainer_snap', el('snapDivisor').value); }
-  function loadSettings() { const sz = localStorage.getItem('wow_elvui_trainer_size'); if(sz) { el('sizeSlider').value = sz; el('sizeInput').value = sz; document.documentElement.style.setProperty('--box-size', sz+'px'); } else { document.documentElement.style.setProperty('--box-size', '40px'); } const sn = localStorage.getItem('wow_elvui_trainer_snap'); if(sn) el('snapDivisor').value = sn; updateBoardTransform(); }
+  function loadSettings() { const sz = localStorage.getItem('wow_elvui_trainer_size'); if(sz) { el('sizeSlider').value = sz; el('sizeInput').value = sz; document.documentElement.style.setProperty('--box-size', sz+'px'); } else { document.documentElement.style.setProperty('--box-size', '40px'); } const sn = localStorage.getItem('wow_elvui_trainer_snap'); if(sn) el('snapDivisor').value = sn; else el('snapDivisor').value = '20'; updateBoardTransform(); }
   function saveTrainingConfig() { localStorage.setItem('wow_elvui_v48_cfg', JSON.stringify({ sound: el('cfgSound').checked, scale: el('cfgFontScale').value, saveLogs: el('cfgSaveLogs').checked, sprint: el('cfgSprint').value, rhythm: el('cfgRhythm').checked, blind: el('cfgBlind').checked, seq: el('cfgSequence').value, surv: el('cfgSurvival').checked, sp: el('cfgStartSpeed').value, st: el('cfgStep').value, to: el('cfgTimeout').value })); }
   function loadTrainingConfig() { let s = localStorage.getItem('wow_elvui_v48_cfg') || localStorage.getItem('wow_elvui_v46_cfg'); if(s){ let c = JSON.parse(s); if(el('cfgSound')) el('cfgSound').checked = c.sound !== false; if(el('cfgFontScale')) el('cfgFontScale').value = c.scale || 100; if(el('cfgSaveLogs')) el('cfgSaveLogs').checked = c.saveLogs !== false; if(el('cfgSprint')) el('cfgSprint').value = c.sprint || "0"; if(el('cfgRhythm')) el('cfgRhythm').checked = c.rhythm || false; if(el('cfgBlind')) el('cfgBlind').checked = c.blind || false; if(el('cfgSequence')) el('cfgSequence').value = c.seq || 1; if(el('cfgSurvival')) el('cfgSurvival').checked = c.surv || false; if(el('cfgStartSpeed')) el('cfgStartSpeed').value = c.sp || 1000; if(el('cfgStep')) el('cfgStep').value = c.st || 20; if(el('cfgTimeout')) el('cfgTimeout').value = c.to || 2000; updatePresetHighlight(); } else { setDifficulty(1500,0,3000, null); } applyFontScale(); }
   function toggleSettingsPanel() { const s = el('settings-panel').style; if(s.display === 'flex') { s.display = 'none'; if(activeTutType === 'OPTIONS') closeTutorial(); } else { s.display = 'flex'; el('logs-panel').style.display = 'none'; el('feedback-modal').style.display = 'none'; if (!localStorage.getItem('wow_elvui_tut56_OPTIONS')) launchTutorial('OPTIONS', false); } }
@@ -972,7 +962,6 @@
       elBox.appendChild(f); setTimeout(() => f.remove(), 1000); 
   }
   
-  // MODIFICATION : Permet d'enfoncer toutes les touches qui correspondent, de façon visible
   function simulateKeypress(bindStr) { 
       if(!bindStr) return; 
       const found = boxesData.filter(b => b.bind === bindStr); 
@@ -1264,14 +1253,12 @@
   function formatKeyEvent(e) { if(['Control','Shift','Alt','Meta','CapsLock','Tab'].includes(e.key)) return null; let k = []; if(e.ctrlKey) k.push('CTRL'); if(e.altKey) k.push('ALT'); if(e.shiftKey) k.push('SHIFT'); let key = e.key.toUpperCase(); if(key === " ") key = "SPC"; k.push(key); return k.join('+'); }
 
   window.addEventListener('wheel', (e) => { 
-      // Ignorer si on est dans un panneau scrollable (Historique ou Options)
       if(e.target.closest('.floating-panel') || e.target.closest('#welcome-modal') || e.target.closest('#score-modal')) return;
       
       if(!isPlayMode && !listeningBoxId && !isKeybindMode) return; 
       e.preventDefault(); 
       let k = []; if(e.ctrlKey) k.push('CTRL'); if(e.altKey) k.push('ALT'); if(e.shiftKey) k.push('SHIFT'); k.push(e.deltaY < 0 ? 'WU' : 'WD'); let bind = k.join('+'); 
       
-      // MODIFICATION : Retour visuel immédiat même hors jeu ou sur molette
       simulateKeypress(bind);
 
       if(isKeybindMode && hoveredBoxId) { assignBindDirectly(hoveredBoxId, bind); return; }
@@ -1284,12 +1271,9 @@
   }, {passive: false});
   
   window.addEventListener('keydown', (e) => { 
-      // Ignorer si on tape dans un champ texte (ex: nom du profil)
       if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
 
-      // MODIFICATION : BLOCAGE AGRESSIF INCONDITIONNEL
-      // On bloque tout sauf Echap et F12 (pour la console dév)
-      if(e.key !== 'Escape' && e.key !== 'F12') {
+      if(e.key !== 'Escape') {
           e.preventDefault();
       }
 
