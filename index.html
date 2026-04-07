@@ -39,10 +39,10 @@
     @keyframes bloodlustPulse { 0% { box-shadow: inset 0 0 30px rgba(210, 92, 106, 0.1); } 100% { box-shadow: inset 0 0 100px rgba(210, 92, 106, 0.5); } }
   
     /* =========================================
-       2. UI : TOOLBAR & BOUTONS
+       2. UI : TOOLBAR & BOUTONS (MODE FOCUS)
        ========================================= */
     #toolbar { 
-        background: var(--elvui-toolbar); padding: 8px 12px; display: flex; gap: 8px; align-items: center; 
+        background: var(--elvui-toolbar); padding: 6px 12px; display: flex; gap: 12px; align-items: center; 
         border-bottom: 1px solid var(--elvui-border); box-shadow: 0 2px 4px rgba(0,0,0,0.5); 
         position: relative; z-index: 1000; flex-wrap: wrap; min-height: 42px;
         transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -51,7 +51,13 @@
     body.playing #toolbar { transform: translateY(-100%); }
     body.playing .floating-panel { opacity: 0; pointer-events: none; }
     
-    .separator { width: 1px; height: 20px; background: #313244; margin: 0 2px; }
+    .toolbar-group {
+        display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,0.03); 
+        padding: 4px 8px; border-radius: 4px;
+    }
+    .group-edit { border-bottom: 2px solid #89b4fa; }
+    .group-bind { border-bottom: 2px solid #cba6f7; }
+    .group-sys { border-bottom: 2px solid #a6e3a1; margin-left: auto; }
 
     button { 
         padding: 6px 12px; font-size: 13px; cursor: pointer; background: #313244; color: #bac2de; 
@@ -79,7 +85,7 @@
     select option { background: #1e1e2e; color: #bac2de; }
 
     /* =========================================
-       3. HUD EN JEU (STATS, VIES)
+       3. HUD EN JEU (STATS, VIES, SPRINT BAR)
        ========================================= */
     #stats { 
         position: fixed; top: 10px; right: 20px; background: rgba(17,17,27,0.9); padding: 8px 20px; 
@@ -89,6 +95,11 @@
     }
     #lives-display { position: fixed; top: 15px; left: 20px; font-size: 26px; z-index: 5000; display: none; text-shadow: 2px 2px 0 #000; letter-spacing: 5px; }
     #countdown { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; color: var(--wow-yellow); z-index: 9999; display: none; text-shadow: 0 0 30px rgba(255,209,0,0.5), 4px 4px 0 #000; font-weight: bold; font-family: monospace;}
+
+    #sprint-bar-container { position: fixed; bottom: 0; left: 0; width: 100%; height: 6px; background: #11111b; z-index: 5000; display: none; border-top: 1px solid var(--elvui-border); }
+    #sprint-bar-fill { width: 100%; height: 100%; background: #a6e3a1; transition: width 0.1s linear, background-color 0.3s; }
+    #sprint-bar-fill.execute { background: var(--elvui-error); box-shadow: 0 0 15px var(--elvui-error); animation: pulseExecute 0.5s infinite alternate; }
+    @keyframes pulseExecute { from { opacity: 0.8; } to { opacity: 1; } }
 
     /* =========================================
        4. WORKSPACE & GRILLE
@@ -114,7 +125,7 @@
         max-height: calc(100vh - 100px); overflow-y: auto;
     }
     #settings-panel { right: 20px; width: 350px; }
-    #logs-panel { right: 380px; width: 520px; }
+    #logs-panel { right: 380px; width: 550px; }
     
     .panel-title { color: #89b4fa; font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 5px; border-bottom: 1px solid #313244; padding-bottom: 5px; cursor: grab; user-select: none; }
     .panel-title:active { cursor: grabbing; }
@@ -130,15 +141,14 @@
     .log-table td { padding: 6px; border-bottom: 1px solid #313244; }
 
     /* =========================================
-       6. LES CASES (BOXES)
+       6. LES CASES (BOXES) & EFFETS VISUELS
        ========================================= */
-    .box { position: absolute; width: var(--box-size); height: var(--box-size); border: 1px solid var(--elvui-border); display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--elvui-case-bg); cursor: pointer; box-sizing: border-box; transition: transform 0.05s, border-color 0.1s, background-color 0.3s; }
-    .box-content { display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: none; width: 95%; z-index: 2; text-shadow: 1px 1px 2px #000; }
+    .box { position: absolute; width: var(--box-size); height: var(--box-size); border: 1px solid var(--elvui-border); display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--elvui-case-bg); cursor: pointer; box-sizing: border-box; transition: transform 0.05s, border-color 0.1s, opacity 0.3s; }
+    .box-content { display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: none; width: 95%; z-index: 2; text-shadow: 1px 1px 2px #000; transition: opacity 0.2s;}
     .box-mod { color: #a6adc8; font-size: calc(var(--box-size) * 0.18); line-height: 1; }
     .box-key { color: var(--elvui-case-txt); font-size: calc(var(--box-size) * 0.40); font-weight: bold; line-height: 1; }
     
     .box.selected { border-color: #89b4fa; box-shadow: inset 0 0 10px rgba(137,180,250,0.5); z-index: 50; }
-    .box.active-target { border-color: var(--elvui-active-target) !important; box-shadow: 0 0 15px var(--elvui-active-target) !important; z-index: 100; }
     .box.group-hover { box-shadow: 0 0 10px #89b4fa, inset 0 0 8px #89b4fa !important; border-color: #89b4fa !important; }
     .ghost-box { position: absolute; width: var(--box-size); height: var(--box-size); border: 2px dashed rgba(137, 180, 250, 0.5); background: rgba(137, 180, 250, 0.2); pointer-events: none; z-index: 40; display: none;}
     .drag-invalid { border-color: var(--elvui-error) !important; background: rgba(210, 92, 106, 0.4) !important; }
@@ -146,19 +156,38 @@
     
     .box.pressed { transform: scale(0.92) !important; background-color: #f1c40f !important; filter: brightness(0.8) !important; border-color: #f1c40f !important; z-index: 200; box-shadow: inset 0 0 10px rgba(0,0,0,0.5) !important; transition: transform 0.05s, background-color 0.05s !important;}
     
-    /* MODE RACCOURCIS (HOVER BIND) */
+    /* ASSOMBRISSEMENT EN JEU */
+    body.playing .box[data-empty="true"] { opacity: 0.15 !important; border-color: transparent !important; pointer-events: none; }
+
+    /* EFFET DE PROC (Cible Active) */
+    .box.active-target { border-color: var(--elvui-active-target) !important; box-shadow: 0 0 15px var(--elvui-active-target) !important; z-index: 100; }
+    .box.active-target::before { content: '('; position: absolute; left: -10px; font-size: calc(var(--box-size) * 0.9); font-weight: normal; color: var(--wow-yellow); animation: procAnim 0.6s infinite alternate; text-shadow: 0 0 8px var(--wow-yellow); pointer-events: none; z-index: 250;}
+    .box.active-target::after { content: ')'; position: absolute; right: -10px; font-size: calc(var(--box-size) * 0.9); font-weight: normal; color: var(--wow-yellow); animation: procAnim 0.6s infinite alternate; text-shadow: 0 0 8px var(--wow-yellow); pointer-events: none; z-index: 250;}
+    @keyframes procAnim { from { transform: scale(0.9); opacity: 0.7; } to { transform: scale(1.15); opacity: 1; } }
+
+    /* GCD VISUEL INDIVIDUEL */
+    .gcd-sweep { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); animation: gcdSweepAnim 2s linear forwards; pointer-events: none; z-index: 10; border-top: 1px solid rgba(255,255,255,0.3);}
+    @keyframes gcdSweepAnim { 0% { height: 100%; } 100% { height: 0%; } }
+
+    /* GHOSTING MODE RACCOURCIS */
     body.keybind-mode .box:hover { border-color: var(--elvui-bind-mode) !important; box-shadow: 0 0 15px var(--elvui-bind-mode) !important; z-index: 150; }
+    body.keybind-mode .box:hover .box-content { opacity: 0; }
+    body.keybind-mode .box:hover::after { content: '[ Touche ? ]'; position: absolute; font-size: 10px; font-weight: bold; color: #11111b; background: var(--elvui-bind-mode); padding: 2px 4px; border-radius: 2px; animation: blink 1s infinite; z-index: 200; white-space: nowrap;}
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
     /* Séquences Badges */
     .sequence-badge { position: absolute; top: -8px; right: -8px; background: var(--wow-yellow); color: #000; border-radius: 50%; width: 22px; height: 22px; font-weight: bold; font-size: 14px; display: flex; justify-content: center; align-items: center; z-index: 200; box-shadow: 0 0 5px #000; border: 1px solid #11111b;}
+
+    /* TOOLTIP HEATMAP */
+    #heatmap-tooltip { position: fixed; background: rgba(17, 17, 27, 0.95); border: 1px solid var(--elvui-error); padding: 10px; color: #bac2de; font-size: 12px; pointer-events: none; z-index: 9999; display: none; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); line-height: 1.5; }
 
     /* =========================================
        7. FCT (TEXTE DE COMBAT) & GAME FEEL
        ========================================= */
     .fct { position: absolute; top: 0; left: 50%; font-weight: bold; pointer-events: none; z-index: 500; white-space: nowrap; }
-    .fct.crit { color: var(--wow-yellow); font-size: calc(var(--box-size) * 0.6); animation: critUp 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 15px var(--wow-yellow), 2px 2px 0 #000; }
-    .fct.normal-hit { color: #a6e3a1; font-size: calc(var(--box-size) * 0.4); animation: floatUp 0.8s ease-out forwards; text-shadow: 1px 1px 2px #000;}
-    .fct.fall-miss { color: var(--elvui-error); font-size: calc(var(--box-size) * 0.5); animation: fallDown 1s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards; text-shadow: 1px 1px 2px #000;}
+    .fct.crit { color: var(--wow-yellow); font-size: calc(var(--box-size) * 0.45); animation: critUp 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 15px var(--wow-yellow), 2px 2px 0 #000; }
+    .fct.normal-hit { color: #a6e3a1; font-size: calc(var(--box-size) * 0.35); animation: floatUp 0.8s ease-out forwards; text-shadow: 1px 1px 2px #000;}
+    .fct.fall-miss { color: var(--elvui-error); font-size: calc(var(--box-size) * 0.45); animation: fallDown 1s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards; text-shadow: 1px 1px 2px #000;}
     @keyframes floatUp { 0% { top: 0; opacity: 1; transform: translateX(-50%) scale(1); } 100% { top: -40px; opacity: 0; transform: translateX(-50%) scale(1.2); } }
     @keyframes critUp { 0% { top: 0; opacity: 1; transform: translateX(-50%) scale(1.5) rotate(-5deg); } 20% { transform: translateX(-50%) scale(1.2) rotate(5deg); } 100% { top: -60px; opacity: 0; transform: translateX(-50%) scale(1.5); } }
     @keyframes fallDown { 0% { top: 0; opacity: 1; transform: translateX(-50%) scale(1); } 100% { top: 60px; opacity: 0; transform: translateX(-50%) scale(0.8) rotate(10deg); } }
@@ -175,7 +204,6 @@
     .combo-bump { transform: translateX(-50%) scale(1.3) !important; color: #a6e3a1 !important; }
     .combo-break { transform: translateX(-50%) scale(0.8) !important; color: var(--elvui-error) !important; text-shadow: 0 0 15px var(--elvui-error) !important; }
     .combo-milestone { animation: milestonePulse 0.5s ease-out; color: var(--wow-yellow) !important; text-shadow: 0 0 20px var(--wow-yellow), 2px 2px 0 #000 !important;}
-    @keyframes milestonePulse { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.6); } 100% { transform: translateX(-50%) scale(1); } }
 
     #blind-prompt { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); font-size: 80px; font-weight: bold; color: var(--elvui-active-target); text-shadow: 0 0 20px rgba(51,209,122,0.5); display: none; z-index: 500; pointer-events: none; font-family: monospace; }
     body[data-blind="true"] .box { opacity: 0.1 !important; border-color: transparent !important; background: transparent !important; }
@@ -207,13 +235,21 @@
     #welcome-modal h1, #feedback-modal h1 { color: var(--wow-yellow); margin-top: 0; font-size: 22px; text-shadow: 1px 1px 0 #000;}
     #feedback-modal textarea { width: 100%; height: 100px; background: #11111b; color: #a6e3a1; border: 1px solid #45475a; padding: 10px; margin: 15px 0; border-radius: 4px; resize: none; font-family: inherit; box-sizing: border-box;}
     
-    #score-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e1e2e; border: 2px solid #89b4fa; padding: 25px; z-index: 9999; text-align: center; border-radius: 8px; color: #bac2de; display: none; min-width: 350px; box-shadow: 0 0 40px rgba(0,0,0,0.9); }
-    .score-acc { font-size: 32px; font-weight: bold; margin: 15px 0; color: #a6e3a1; text-shadow: 1px 1px 0 #000; }
+    #score-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e1e2e; border: 2px solid #89b4fa; padding: 25px; z-index: 9999; text-align: center; border-radius: 8px; color: #bac2de; display: none; min-width: 450px; box-shadow: 0 0 40px rgba(0,0,0,0.9); }
+    .score-acc { font-size: 32px; font-weight: bold; margin: 10px 0; color: #a6e3a1; text-shadow: 1px 1px 0 #000; }
+    
+    #parse-rank { position: absolute; top: 15px; right: 25px; font-size: 65px; font-weight: bold; font-family: impact, sans-serif; text-shadow: 2px 2px 5px #000; transform: rotate(10deg); }
+    .parse-s { color: #ff8000; text-shadow: 0 0 20px rgba(255,128,0,0.6), 2px 2px 0 #000 !important; }
+    .parse-a { color: #a335ee; text-shadow: 0 0 20px rgba(163,53,238,0.6), 2px 2px 0 #000 !important; }
+    .parse-b { color: #0070dd; }
+    .parse-c { color: #1eff00; }
+    .parse-d { color: #9d9d9d; }
+
     #worst-keys { margin-top: 15px; font-size: 12px; background: #11111b; padding: 10px; border-radius: 4px; text-align: left; border: 1px solid #45475a;}
 
     /* TUTORIEL SPOTLIGHT */
     #spotlight-hole { position: fixed; border-radius: 4px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.85); pointer-events: none; z-index: 9998; display: none; border: 2px solid var(--wow-yellow); transition: all 0.3s ease; }
-    #tut-tooltip { position: fixed; background: rgba(17, 17, 27, 0.98); border: 2px solid var(--wow-yellow); box-shadow: 0 4px 20px rgba(0,0,0,0.9); z-index: 9999; padding: 20px; width: 300px; color: #bac2de; display: none; flex-direction: column; gap: 15px; border-radius: 4px; transition: all 0.3s ease; }
+    #tut-tooltip { position: fixed; background: rgba(17, 17, 27, 0.98); border: 2px solid var(--wow-yellow); box-shadow: 0 4px 20px rgba(0,0,0,0.9); z-index: 9999; padding: 20px; width: 340px; color: #bac2de; display: none; flex-direction: column; gap: 15px; border-radius: 4px; transition: all 0.3s ease; }
     .tut-title { color: var(--wow-yellow); font-size: 18px; font-weight: bold; border-bottom: 1px solid #45475a; padding-bottom: 8px; text-shadow: 1px 1px 0 #000; margin: 0; }
     .tut-dot { width: 10px; height: 10px; border-radius: 50%; background: #45475a; }
     .tut-dot.active { background: var(--wow-yellow); box-shadow: 0 0 5px var(--wow-yellow); }
@@ -260,26 +296,28 @@
   <div id="tut-tooltip">
       <div class="tut-title" id="tut-title">Titre</div>
       <div id="tut-text" style="font-size:14px; line-height:1.4">Texte</div>
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px">
+      <div style="display:flex; align-items:center; margin-top:20px; width:100%;">
           <button style="background:transparent; border:1px solid #45475a; color:#a6adc8; padding: 4px 8px; font-size:11px;" onclick="closeTutorial()">Fermer</button>
-          <div style="display:flex; align-items:center; gap:8px;">
-              <button id="tut-btn-prev" style="background:#313244; color:#bac2de; border:none; padding:6px 10px; font-weight:bold; cursor:pointer; border-radius:2px; display:none;" onclick="prevTutorialStep()">◄ Préc.</button>
-              <div id="tut-dots" style="display:flex; gap:5px; margin: 0 5px;"></div>
-              <button id="tut-btn-next" class="btn-tut" onclick="nextTutorialStep()">Suivant</button>
-          </div>
+          <div style="flex: 1;"></div>
+          <button id="tut-btn-prev" style="background:#313244; color:#bac2de; border:none; padding:6px 10px; font-weight:bold; cursor:pointer; border-radius:2px; display:none; margin-right: 15px;" onclick="prevTutorialStep()">◄ Préc.</button>
+          <div id="tut-dots" style="display:flex; gap:5px; margin-right: 15px;"></div>
+          <button id="tut-btn-next" class="btn-tut" onclick="nextTutorialStep()">Suivant</button>
       </div>
   </div>
 
   <div id="toast">💾 Profil sauvegardé</div>
   <div id="trash-zone">🗑️ Glisser ici pour supprimer</div>
   <div id="countdown">3</div>
+  <div id="heatmap-tooltip"></div>
 
   <div id="lives-display">❤️❤️❤️</div>
+  <div id="sprint-bar-container"><div id="sprint-bar-fill"></div></div>
 
   <div id="score-modal">
-      <h2 style="color:#89b4fa; margin-top:0;">Session Terminée !</h2>
+      <h2 style="color:#89b4fa; margin-top:0; text-align:left;">Session Terminée !</h2>
+      <div id="parse-rank" class="parse-s">S</div>
       <div class="score-acc" id="sm-acc">100%</div>
-      <div style="font-size:14px; line-height:1.8; margin-bottom:10px;">
+      <div style="font-size:14px; line-height:1.8; margin-bottom:10px; text-align:left;">
           Score : <b id="sm-score" style="color:#cba6f7;">0</b><br>
           APM : <b id="sm-apm" style="color:#89b4fa;">0</b><br>
           Réaction moy. : <b id="sm-react" style="color:#f9e2af;">0 ms</b><br>
@@ -290,8 +328,10 @@
       <div id="worst-keys"></div>
 
       <div style="display:flex; gap:10px; margin-top:15px;">
-          <button style="flex:1; background: var(--discord-color); color: #fff; font-weight: bold; border:none; padding:10px; border-radius: 4px;" onclick="shareToDiscord()">Partager (Discord)</button>
-          <button style="flex:1; background: #89b4fa; color: #11111b; font-weight: bold; border:none; padding:10px; border-radius: 4px;" onclick="closeScore()">Continuer</button>
+          <button style="flex:1; background: #a6e3a1; color: #11111b; font-weight: bold; border:none; padding:10px; border-radius: 4px;" onclick="retrySession()">🔄 Rejouer</button>
+          <button style="flex:1; background: #cba6f7; color: #11111b; font-weight: bold; border:none; padding:10px; border-radius: 4px;" onclick="viewLastSessionHeatmap()">🔥 Heatmap</button>
+          <button style="flex:1; background: var(--discord-color); color: #fff; font-weight: bold; border:none; padding:10px; border-radius: 4px;" onclick="shareToDiscord()">Partager</button>
+          <button style="background: #45475a; color: #bac2de; font-weight: bold; border:none; padding:10px; border-radius: 4px;" onclick="closeScore()">✖</button>
       </div>
   </div>
 
@@ -303,26 +343,23 @@
 
   <div id="toolbar">
     <button class="btn-info" onclick="triggerInfoTutorial()">i</button>
-    <div id="tut-target-binds" style="display:flex; gap:8px;">
+    
+    <div class="toolbar-group group-edit" id="tut-group-edit">
         <button onclick="addBox()" class="action-btn">+ Case</button>
-        <button onclick="toggleKeybindMode()" id="btnKeybindMode" class="action-btn" style="color: var(--elvui-bind-mode);" title="Active le Mode Raccourcis (Style ElvUI)">⌨️ Raccourcis</button>
-    </div>
-    <div class="separator"></div>
-    <div id="tut-target-liaison">
         <button onclick="groupSelected()" class="action-btn" title="Sélectionnez plusieurs cases au lasso pour les lier">🔗 Lier</button>
         <button onclick="ungroupSelected()" class="action-btn">🔓 Délier</button>
-    </div>
-    <div class="separator"></div>
-    
-    <div id="tut-target-taille-aimant" style="display:flex; gap:8px;">
-        <div class="setting-group">Taille:<input type="range" id="sizeSlider" min="20" max="150" value="40" oninput="updateSizeFromSlider()"><input type="number" id="sizeInput" class="size-input" value="40" onchange="updateSizeFromInput()"></div>
-        <div class="setting-group">Aimant: <select id="snapDivisor" class="select-input" onchange="saveSettings()"><option value="1">Grille Stricte</option><option value="2">Souple</option><option value="5">Très Souple</option><option value="20" selected>Libre</option></select></div>
+        <div class="setting-group">
+            Taille:<input type="range" id="sizeSlider" min="20" max="150" value="40" oninput="updateSizeFromSlider()"><input type="number" id="sizeInput" class="size-input" value="40" onchange="updateSizeFromInput()">
+            Aimant: <select id="snapDivisor" class="select-input" onchange="saveSettings()"><option value="1">Stricte</option><option value="2">Souple</option><option value="5">Très Souple</option><option value="20" selected>Libre</option></select>
+        </div>
     </div>
     
-    <div class="separator"></div>
-    <button onclick="toggleHeatmap()" id="btnHeatmap" class="action-btn" style="color: var(--elvui-error); margin-left: 8px;">🔥 Heatmap</button>
-    <div class="separator"></div>
-    <div id="tut-target-fin" style="display:flex; gap:8px; margin-left:auto;">
+    <div class="toolbar-group group-bind" id="tut-group-bind">
+        <button onclick="toggleKeybindMode()" id="btnKeybindMode" class="action-btn" style="color: var(--elvui-bind-mode);" title="Active le Mode Raccourcis (Style ElvUI)">⌨️ Raccourcis</button>
+    </div>
+    
+    <div class="toolbar-group group-sys" id="tut-group-sys">
+        <button onclick="toggleHeatmap()" id="btnHeatmap" class="action-btn" style="color: var(--elvui-error);">🔥 Heatmap</button>
         <button onclick="toggleLogsPanel()" class="action-btn">📊 Logs</button>
         <button onclick="toggleSettingsPanel()" id="btnSettings" class="action-btn" style="color:#a6e3a1;">⚙️ Options</button>
         <button onclick="togglePlayMode()" id="modeBtn" class="success">▶ Lancer</button>
@@ -387,7 +424,7 @@
         Précision: <span id="log-avg-acc" style="color:#a6e3a1; font-weight:bold;">0%</span> | 
         APM: <span id="log-avg-apm" style="color:#89b4fa; font-weight:bold;">0</span>
     </div>
-    <table class="log-table"><thead><tr><th>Date</th><th>Profil</th><th>Tch</th><th>Err</th><th>Acc</th><th>APM / Score</th><th>🗑️</th></tr></thead><tbody id="logs-tbody"></tbody></table>
+    <table class="log-table"><thead><tr><th>Date</th><th>Profil</th><th>Tch</th><th>Err</th><th>Acc</th><th>APM / Pts</th><th>🔥</th><th>🗑️</th></tr></thead><tbody id="logs-tbody"></tbody></table>
   </div>
 
   <div id="workspace">
@@ -505,11 +542,12 @@
   let activeTargets = []; 
   
   let lockedBinds = {};
+  let currentHeatmapData = null;
   
   let isKeybindMode = false;
   let dragPanel = null, dpOffsetX = 0, dpOffsetY = 0;
 
-  const PRESET_KIIPEY_B64 = "JTdCJTIyYm94ZXMlMjIlM0ElNUIlN0IlMjJpZCUyMiUzQSUyMmJveC0xJTIyJTJDJTIycHglMjIlM0EtMTI2JTJDJTIycHklMjIlM0EyMTAlMkMlMjJiaW5kJTIyJTNBJTIyRjUlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMiUyMiUyQyUyMnB4JTIyJTNBLTg0JTJDJTIycHklMjIlM0EyMTAlMkMlMjJiaW5kJTIyJTNBJTIyRjYlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMyUyMiUyQyUyMnB4JTIyJTNBLTQyJTJDJTIycHklMjIlM0EyMTAlMkMlMjJiaW5kJTIyJTNBJTIyRjclMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtNCUyMiUyQyUyMnB4JTIyJTNBMCUyQyUyMnB5JTIyJTNBMjEwJTJDJTIyYmluZCUyMiUzQSUyMkY4JTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTUlMjIlMkMlMjJweCUyMiUzQS0xNjglMkMlMjJweSUyMiUzQTI1MiUyQyUyMmJpbmQlMjIlM0ElMjIlMjYlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtNiUyMiUyQyUyMnB4JTIyJTNBLTEyNiUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMiVDMyU4OSUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC03JTIyJTJDJTIycHglMjIlM0EtODQlMkMlMjJweSUyMiUzQTI1MiUyQyUyMmJpbmQlMjIlM0ElMjIlNUMlMjIlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtOCUyMiUyQyUyMnB4JTIyJTNBLTQyJTJDJTIycHklMjIlM0EyNTIlMkMlMjJiaW5kJTIyJTNBJTIyJyUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC05JTIyJTJDJTIycHglMjIlM0EwJTJDJTIycHklMjIlM0EyNTIlMkMlMjJiaW5kJTIyJTNBJTIyKCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0xMCUyMiUyQyUyMnB4JTIyJTNBLTE2OCUyQyUyMnB5JTIyJTNBMjk0JTJDJTIyYmluZCUyMiUzQSUyMiVDMyU4MCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0xMSUyMiUyQyUyMnB4JTIyJTNBLTQyJTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyRjEwJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTEyJTIyJTJDJTIycHglMjIlM0EwJTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyRjExJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTEzJTIyJTJDJTIycHglMjIlM0E4NCUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMjElMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTQlMjIlMkMlMjJweCUyMiUzQTEyNiUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMjIlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTUlMjIlMkMlMjJweCUyMiUzQTE2OCUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMjMlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTYlMjIlMkMlMjJweCUyMiUzQTIxMCUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMkNUUkwlMkIzJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTE3JTIyJTJDJTIycHglMjIlM0E4NCUyQyUyMnB5JTIyJTNBMjk0JTJDJTIyYmluZCUyMiUzQSUyMjQlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTglMjIlMkMlMjJweCUyMiUzQTEyNiUyQyUyMnB5JTIyJTNBMjk0JTJDJTIyYmluZCUyMiUzQSUyMjUlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTklMjIlMkMlMjJweCUyMiUzQTE2OCUyQyUyMnB5JTIyJTNBMjk0JTJDJTIyYmluZCUyMiUzQSUyMjYlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjAlMjIlMkMlMjJweCUyMiUzQTg0JTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyNyUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0yMSUyMiUyQyUyMnB4JTIyJTNBMTI2JTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyOCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0yMiUyMiUyQyUyMnB4JTIyJTNBMTY4JTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyOSUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0yMyUyMiUyQyUyMnB4JTIyJTNBNTQ2JTJDJTIycHklMjIlM0E0NjIlMkMlMjJiaW5kJTIyJTNBJTIyLSUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0yNCUyMiUyQyUyMnB4JTIyJTNBNTg4JTJDJTIycHklMjIlM0E0NjIlMkMlMjJiaW5kJTIyJTNBJTIyQ1RSTCUyQi0lMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjUlMjIlMkMlMjJweCUyMiUzQTU0NiUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMiolMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjYlMjIlMkMlMjJweCUyMiUzQTU4OCUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMkNUUkwlMkIqJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTI3JTIyJTJDJTIycHglMjIlM0E1NDYlMkMlMjJweSUyMiUzQTU0NiUyQyUyMmJpbmQlMjIlM0ElMjIlMkIlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjglMjIlMkMlMjJweCUyMiUzQTU4OCUyQyUyMnB5JTIyJTNBNTQ2JTJDJTIyYmluZCUyMiUzQSUyMkNUUkwlMkIlMkIlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjklMjIlMkMlMjJweCUyMiUzQS01ODglMkMlMjJweSUyMiUzQTU0NiUyQyUyMmJpbmQlMjIlM0ElMjIlM0YlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMzAlMjIlMkMlMjJweCUyMiUzQS01NDYlMkMlMjJweSUyMiUzQTU0NiUyQyUyMmJpbmQlMjIlM0ElMjIlM0YlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMzExJTIyJTJDJTIycHglMjIlM0EtNTA0JTJDJTIycHklMjIlM0E1NDYlMkMlMjJiaW5kJTIyJTNBJTIyREVBRCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zMiUyMiUyQyUyMnB4JTIyJTNBLTQ2MiUyQyUyMnB5JTIyJTNBNTQ2JTJDJTIyYmluZCUyMiUzQSUyMiUzRCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zMyUyMiUyQyUyMnB4JTIyJTNBLTU4OCUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zNCUyMiUyQyUyMnB4JTIyJTNBLTU0NiUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zNSUyMiUyQyUyMnB4JTIyJTNBLTUwNCUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zNiUyMiUyQyUyMnB4JTIyJTNBLTQ2MiUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zNyUyMiUyQyUyMnB4JTIyJTNBLTU4OCUyQyUyMnB5JTIyJTNBNDYyJTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zOCUyMiUyQyUyMnB4JTIyJTNBLTU0NiUyQyUyMnB5JTIyJTNBNDYyJTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zOSUyMiUyQyUyMnB4JTIyJTNBLTUwNCUyQyUyMnB5JTIyJTNBNDYyJTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC00MCUyMiUyQyUyMnB4JTIyJTNBLTQ2MiUyQyUyMnB5JTIyJTNBNDYyJTJDJTIyYmluZCUyMiUzQSUyMiUzQyUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlNUQlMkMlMjJsb2dzJTIyJTNBJTVCJTdCJTIyaWQlMjIlM0ExNzc1NDg5OTgzNDY1JTJDJTIyZGF0ZSUyMiUzQSUyMjA2JTJGMDQlMjAxNyUzQTM5JTIyJTJDJTIycHJvZmlsZSUyMiUzQSUyMkQlQzMlQTl0ZW50ZSUyMiUyQyUyMmhpdHMlMjIlM0E3NiUyQyUyMm1pc3NlcyUyMiUzQTEzJTJDJTIyYWNjdXJhY3klMjIlM0E4NSUyQyUyMmF2Z1JlYWN0JTIyJTNBMTMyNiUyQyUyMmFwbSUyMiUzQTMwJTJDJTIyc2NvcmUlMjIlM0E5NDMlN0QlNUQlMkMlMjJjYW1YJTIyJTNBODYwLjA2Nzk1MDQzOTQ1MzElMkMlMjJjYW1ZJTIyJTNBMjk4LjQ3NDI0MzE2NDA2MjUlN0Q=";
+  const PRESET_KIIPEY_B64 = "JTdCJTIyYm94ZXMlMjIlM0ElNUIlN0IlMjJpZCUyMiUzQSUyMmJveC0xJTIyJTJDJTIycHglMjIlM0EtMTI2JTJDJTIycHklMjIlM0EyMTAlMkMlMjJiaW5kJTIyJTNBJTIyRjUlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMiUyMiUyQyUyMnB4JTIyJTNBLTg0JTJDJTIycHklMjIlM0EyMTAlMkMlMjJiaW5kJTIyJTNBJTIyRjYlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMyUyMiUyQyUyMnB4JTIyJTNBLTQyJTJDJTIycHklMjIlM0EyMTAlMkMlMjJiaW5kJTIyJTNBJTIyRjclMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtNCUyMiUyQyUyMnB4JTIyJTNBMCUyQyUyMnB5JTIyJTNBMjEwJTJDJTIyYmluZCUyMiUzQSUyMkY4JTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTUlMjIlMkMlMjJweCUyMiUzQS0xNjglMkMlMjJweSUyMiUzQTI1MiUyQyUyMmJpbmQlMjIlM0ElMjIlMjYlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtNiUyMiUyQyUyMnB4JTIyJTNBLTEyNiUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMiVDMyU4OSUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC03JTIyJTJDJTIycHglMjIlM0EtODQlMkMlMjJweSUyMiUzQTI1MiUyQyUyMmJpbmQlMjIlM0ElMjIlNUMlMjIlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtOCUyMiUyQyUyMnB4JTIyJTNBLTQyJTJDJTIycHklMjIlM0EyNTIlMkMlMjJiaW5kJTIyJTNBJTIyJyUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC05JTIyJTJDJTIycHglMjIlM0EwJTJDJTIycHklMjIlM0EyNTIlMkMlMjJiaW5kJTIyJTNBJTIyKCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0xMCUyMiUyQyUyMnB4JTIyJTNBLTE2OCUyQyUyMnB5JTIyJTNBMjk0JTJDJTIyYmluZCUyMiUzQSUyMiVDMyU4MCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0xMSUyMiUyQyUyMnB4JTIyJTNBLTQyJTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyRjEwJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTEyJTIyJTJDJTIycHglMjIlM0EwJTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyRjExJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTEzJTIyJTJDJTIycHglMjIlM0E4NCUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMjElMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTQlMjIlMkMlMjJweCUyMiUzQTEyNiUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMjIlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTUlMjIlMkMlMjJweCUyMiUzQTE2OCUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMjMlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTYlMjIlMkMlMjJweCUyMiUzQTIxMCUyQyUyMnB5JTIyJTNBMjUyJTJDJTIyYmluZCUyMiUzQSUyMkNUUkwlMkIzJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTE3JTIyJTJDJTIycHglMjIlM0E4NCUyQyUyMnB5JTIyJTNBMjk0JTJDJTIyYmluZCUyMiUzQSUyMjQlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTglMjIlMkMlMjJweCUyMiUzQTEyNiUyQyUyMnB5JTIyJTNBMjk0JTJDJTIyYmluZCUyMiUzQSUyMjUlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMTklMjIlMkMlMjJweCUyMiUzQTE2OCUyQyUyMnB5JTIyJTNBMjk0JTJDJTIyYmluZCUyMiUzQSUyMjYlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjAlMjIlMkMlMjJweCUyMiUzQTg0JTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyNyUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0yMSUyMiUyQyUyMnB4JTIyJTNBMTI2JTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyOCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0yMiUyMiUyQyUyMnB4JTIyJTNBMTY4JTJDJTIycHklMjIlM0EzMzYlMkMlMjJiaW5kJTIyJTNBJTIyOSUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0yMyUyMiUyQyUyMnB4JTIyJTNBNTQ2JTJDJTIycHklMjIlM0E0NjIlMkMlMjJiaW5kJTIyJTNBJTIyLSUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0yNCUyMiUyQyUyMnB4JTIyJTNBNTg4JTJDJTIycHklMjIlM0E0NjIlMkMlMjJiaW5kJTIyJTNBJTIyQ1RSTCUyQi0lMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjUlMjIlMkMlMjJweCUyMiUzQTU0NiUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMiolMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjYlMjIlMkMlMjJweCUyMiUzQTU4OCUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMkNUUkwlMkIqJTIyJTJDJTIyZ3JvdXAlMjIlM0ElMjJiYXIxOCUyMiU3RCUyQyU3QiUyMmlkJTIyJTNBJTIyYm94LTI3JTIyJTJDJTIycHglMjIlM0E1NDYlMkMlMjJweSUyMiUzQTU0NiUyQyUyMmJpbmQlMjIlM0ElMjIlMkIlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjglMjIlMkMlMjJweCUyMiUzQTU4OCUyQyUyMnB5JTIyJTNBNTQ2JTJDJTIyYmluZCUyMiUzQSUyMkNUUkwlMkIlMkIlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMjklMjIlMkMlMjJweCUyMiUzQS01ODglMkMlMjJweSUyMiUzQTU0NiUyQyUyMmJpbmQlMjIlM0ElMjIlM0YlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMzAlMjIlMkMlMjJweCUyMiUzQS01NDYlMkMlMjJweSUyMiUzQTU0NiUyQyUyMmJpbmQlMjIlM0ElMjIlM0YlMjIlMkMlMjJncm91cCUyMiUzQSUyMmJhcjE4JTIyJTdEJTJDJTdCJTIyaWQlMjIlM0ElMjJib3gtMzExJTIyJTJDJTIycHglMjIlM0EtNTA0JTJDJTIycHklMjIlM0E1NDYlMkMlMjJiaW5kJTIyJTNBJTIyREVBRCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zMiUyMiUyQyUyMnB4JTIyJTNBLTQ2MiUyQyUyMnB5JTIyJTNBNTQ2JTJDJTIyYmluZCUyMiUzQSUyMiUzRCUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zMyUyMiUyQyUyMnB4JTIyJTNBLTU4OCUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zNCUyMiUyQyUyMnB4JTIyJTNBLTU0NiUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zNSUyMiUyQyUyMnB4JTIyJTNBLTUwNCUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zNiUyMiUyQyUyMnB4JTIyJTNBLTQ2MiUyQyUyMnB5JTIyJTNBNTA0JTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zNyUyMiUyQyUyMnB4JTIyJTNBLTU4OCUyQyUyMnB5JTIyJTNBNDYyJTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zOCUyMiUyQyUyMnB4JTIyJTNBLTU0NiUyQyUyMnB5JTIyJTNBNDYyJTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC0zOSUyMiUyQyUyMnB4JTIyJTNBLTUwNCUyQyUyMnB5JTIyJTNBNDYyJTJDJTIyYmluZCUyMiUzQSUyMiUzRiUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlMkMlN0IlMjJpZCUyMiUzQSUyMmJveC00MCUyMiUyQyUyMnB4JTIyJTNBLTQ2MiUyQyUyMnB5JTIyJTNBNDYyJTJDJTIyYmluZCUyMiUzQSUyMiUzQyUyMiUyQyUyMmdyb3VwJTIyJTNBJTIyYmFyMTglMjIlN0QlNUQlMkMlMjJsb2dzJTIyJTNBJTVCJTdCJTIyaWQlMjIlM0ExNzc1NDg5OTgzNDY1JTJDJTIyZGF0ZSUyMiUzQSUyMjA2JTJGMDQlMjAxNyUzQTM5JTIyJTJDJTIycHJvZmlsZSUyMiUzQSUyMkQlQzMlQTl0ZW50ZSUyMiUyQyUyMmhpdHMlMjIlM0E3NiUyQyUyMm1pc3NlcyUyMiUzQTEzJTJDJTIyYWNjdXJhY3klMjIlM0E4NSUyQyUyMmF2Z1JlYWN0JTIyJTNBMTMyNiUyQyUyMmFwbSUyMiUzQTMwJTJDJTIyc2NvcmUlMjIlM0E5NDMlN0QlNUQlMkMlMjJjYW1ZJTIyJTNBODYwLjA2Nzk1MDQzOTQ1MzElMkMlMjJjYW1ZJTIyJTNBMjk4LjQ3NDI0MzE2NDA2MjUlN0Q=";
 
   function loadCommunityPreset(type) {
       let pName = type === 'Kiipey' ? 'Profil Kiipey' : 'Standard MMO';
@@ -539,13 +577,11 @@
   // ==========================================
   const tutorials = {
       MAIN: [
-          { target: 'tut-target-binds', title: "1. L'Édition", text: "Créez vos cases avec <b>+ Case</b>. Déplacez-les librement ou sélectionnez-les au lasso.<br><br>💡 <b>Astuce Pro</b> : Utilisez le bouton <b>⌨️ Raccourcis</b> pour assigner vos touches à la volée, comme sur ElvUI !" },
-          { target: 'instructions', title: "2. L'Assistant Intégré", text: "Gardez toujours un œil ici ! Cet encart vous indique <b>en temps réel</b> les contrôles et raccourcis disponibles selon vos actions." },
-          { target: 'tut-target-liaison', title: "3. Les Barres", text: "Sélectionnez un groupe de cases et cliquez sur <b>🔗 Lier</b> pour les déplacer toutes ensemble comme une vraie barre d'actions." },
-          { target: 'tut-target-taille-aimant', title: "4. La Grille", text: "Ajustez la taille de vos cases. <br><br>Gérez l'<b>Aimantation</b> pour aligner vos touches parfaitement. Les cases feront apparaître une grille fantôme en les déplaçant !" },
-          { target: 'btnHeatmap', title: "5. L'Analytique", text: "Activez la <b>🔥 Heatmap</b> après une session. Vos cases se coloreront du Vert au Rouge pour indiquer vos lacunes exactes." },
-          { target: 'tut-target-fin', title: "6. À vous de jouer", text: "Ouvrez les <b>⚙️ Options</b> pour gérer votre vitesse et vos sauvegardes, ou cliquez directement sur <b>▶ Lancer</b> pour démarrer la session !" },
-          { target: 'tut-target-commu', title: "7. La Communauté", text: "Un bug bloquant ? Une idée de génie ? Utilisez le bouton de signalement !<br><br>Vous trouverez aussi mes coordonnées juste en dessous pour discuter du projet." }
+          { target: 'tut-group-edit', title: "1. Édition & Barres", text: "Créez vos cases, déplacez-les ou sélectionnez-les au lasso. Vous pouvez aussi <b>🔗 Lier</b> un groupe pour déplacer une barre entière et régler l'aimantation de la grille !" },
+          { target: 'tut-group-bind', title: "2. Les Raccourcis", text: "Cliquez sur <b>⌨️ Raccourcis</b>, puis survolez simplement vos cases en tapant vos touches pour les assigner (comme sur ElvUI)." },
+          { target: 'instructions', title: "3. L'Assistant", text: "Gardez un œil ici ! Cet encart vous indique en temps réel les contrôles et raccourcis selon vos actions." },
+          { target: 'tut-group-sys', title: "4. L'Analyse & Le Jeu", text: "Affichez votre <b>🔥 Heatmap</b> globale, consultez vos <b>📊 Logs</b> pour voir vos progrès, ajustez les <b>⚙️ Options</b> de difficulté, et lancez l'entraînement !" },
+          { target: 'tut-target-commu', title: "5. La Communauté", text: "Un bug bloquant ? Une idée d'amélioration ? Utilisez le bouton de signalement !<br><br>Vous trouverez aussi mes coordonnées juste en dessous pour discuter du projet." }
       ],
       OPTIONS: [
           { target: 'settings-panel', title: "L'Atelier ⚙️", text: "C'est ici que vous allez pouvoir forger votre entraînement sur-mesure. (Astuce : Les fenêtres sont déplaçables !)" },
@@ -559,9 +595,7 @@
   
   let currentTutStep = 0, activeTutType = '';
   
-  function triggerInfoTutorial() {
-      launchTutorial('MAIN', true);
-  }
+  function triggerInfoTutorial() { launchTutorial('MAIN', true); }
   
   function launchTutorial(type, force = false) { 
       if (!force && localStorage.getItem('wow_elvui_tut56_' + type)) return; 
@@ -703,8 +737,9 @@
   function getBoxData(id) { return boxesData.find(b => b.id === id); }
   function buildBoxDOM(d) {
       const box = document.createElement('div'); box.className = 'box'; box.id = d.id; if(d.group) box.dataset.group = d.group;
+      if (!d.bind || d.bind === '?') box.dataset.empty = 'true';
       box.innerHTML = `<div class="box-content"><div class="box-mod"></div><div class="box-key"></div></div>`;
-      applyBoxVisuals(box, d);
+      applyBoxText(box, d);
       
       box.addEventListener('mouseenter', () => { hoveredBoxId = box.id; if(!isPlayMode && d.group && !isDraggingBox) els(`.box[data-group="${d.group}"]`).forEach(b => b.classList.add('group-hover')); });
       box.addEventListener('mouseleave', () => { hoveredBoxId = null; els('.box.group-hover').forEach(b => b.classList.remove('group-hover')); });
@@ -712,7 +747,7 @@
       box.addEventListener('dblclick', (e) => {
           if(isPlayMode || isKeybindMode) return; e.stopPropagation();
           els('.box').forEach(b => b.classList.remove('listening')); 
-          box.classList.add('listening'); listeningBoxId = box.id; updateBoxText(box, '...');
+          box.classList.add('listening'); listeningBoxId = box.id; updateBoxTextRaw(box, '...');
       });
       
       box.addEventListener('mousedown', (e) => {
@@ -747,36 +782,92 @@
       el('board').appendChild(box);
   }
 
-  function applyBoxVisuals(box, d) {
-      if(!box || !d) return; updateBoxText(box, d.bind); 
-      box.style.backgroundColor = ''; 
-      
-      if(showHeatmap && d.bind !== '?') { 
-          let s = boxStats[d.bind]; 
-          if(s && (s.h + s.m) > 0) { 
-              let r = s.h / (s.h + s.m); 
-              box.style.backgroundColor = `rgb(${255*(1-r)}, ${255*r}, 0)`; 
-          } else { 
-              box.style.backgroundColor = '#555'; 
-          } 
-      }
+  function applyBoxText(box, d) {
+      if(!box || !d) return; updateBoxTextRaw(box, d.bind); 
   }
 
-  function updateBoxText(box, t) {
+  function updateBoxTextRaw(box, t) {
       const m = box.querySelector('.box-mod'), k = box.querySelector('.box-key'); 
       if(!t || t === '?' || t === '...') { 
-          m.innerText = ''; k.innerText = t || '?'; 
+          m.innerText = ''; k.innerText = t || '?'; box.dataset.empty = 'true';
       } else { 
+          box.dataset.empty = 'false';
           let p = t.split('+');
           if (p[p.length - 1] === "") {
-              p.pop(); 
-              k.innerText = "+"; 
-              m.innerText = p.join('+'); 
+              p.pop(); k.innerText = "+"; m.innerText = p.join('+'); 
           } else {
-              k.innerText = p.pop(); 
-              m.innerText = p.join('+'); 
+              k.innerText = p.pop(); m.innerText = p.join('+'); 
           }
       } 
+  }
+
+  // ALGORITHME HEATMAP (AGRÉGATION GLOBALE CORRIGÉE)
+  function applyHeatmapVisuals() {
+      let statsSource = currentHeatmapData;
+
+      // Si aucune session précise n'est ciblée, on aggrège TOUS les logs pour la Heatmap Globale
+      if (!statsSource) {
+          statsSource = {};
+          let p = appState.profiles[appState.currentProfile];
+          if (p && p.logs) {
+              p.logs.forEach(log => {
+                  if (log.keyStats) {
+                      for (let k in log.keyStats) {
+                          if (!statsSource[k]) statsSource[k] = { h: 0, m: 0, rt: 0 };
+                          statsSource[k].h += log.keyStats[k].h;
+                          statsSource[k].m += log.keyStats[k].m;
+                          // On additionne les temps de réaction bruts
+                          statsSource[k].rt += log.keyStats[k].rt; 
+                      }
+                  }
+              });
+          }
+      }
+
+      let totalAppearances = 0; let validBoxCount = 0;
+      for(let k in statsSource) { let s = statsSource[k]; if(s.h + s.m > 0) { totalAppearances += (s.h + s.m); validBoxCount++; } }
+      let avgAppearances = validBoxCount > 0 ? totalAppearances / validBoxCount : 1;
+
+      boxesData.forEach(d => {
+          let box = el(d.id); if(!box || d.bind === '?' || d.bind === '') return;
+          let s = statsSource[d.bind];
+          if(s && (s.h + s.m) > 0) {
+              let total = s.h + s.m;
+              let precision = s.h / total;
+              // Le rt moyen global est la somme de tous les rt divisée par la somme de tous les hits
+              let avgRt = s.h > 0 ? s.rt / s.h : 1000;
+              
+              let speedScore = 1 - Math.max(0, Math.min(1, (avgRt - 300) / 700));
+              let mastery = (precision * 0.6) + (speedScore * 0.4);
+              if(s.h === 0) mastery = 0; 
+              
+              let red = Math.round(255 * (1 - mastery));
+              let green = Math.round(255 * mastery);
+              let ratio = total / avgAppearances;
+              let opacity = Math.max(0.3, Math.min(1, ratio));
+              
+              if(s.h === 0 && s.m > 0) {
+                  box.style.setProperty('background', `repeating-linear-gradient(45deg, rgba(255,0,0,${opacity}), rgba(255,0,0,${opacity}) 10px, rgba(100,0,0,${opacity}) 10px, rgba(100,0,0,${opacity}) 20px)`, 'important');
+                  box.style.setProperty('border-color', 'red', 'important');
+              } else {
+                  box.style.setProperty('background', `rgba(${red}, ${green}, 0, ${opacity * 0.75})`, 'important');
+                  box.style.setProperty('border-color', `rgb(${red}, ${green}, 0)`, 'important');
+                  box.style.setProperty('box-shadow', `0 0 15px rgba(${red}, ${green}, 0, ${opacity * 0.5})`, 'important');
+              }
+              box.dataset.hmPrec = Math.round(precision * 100); box.dataset.hmHits = s.h; box.dataset.hmMiss = s.m; box.dataset.hmRt = Math.round(avgRt);
+          } else {
+              box.style.setProperty('background', 'rgba(85, 85, 85, 0.4)', 'important');
+              box.style.setProperty('border-color', '#555', 'important');
+              box.style.setProperty('box-shadow', 'none', 'important');
+              box.dataset.hmPrec = '';
+          }
+      });
+  }
+
+  function clearHeatmapVisuals() {
+      boxesData.forEach(d => {
+          let box = el(d.id); if(box) { box.style.removeProperty('background'); box.style.removeProperty('border-color'); box.style.removeProperty('box-shadow'); box.dataset.hmPrec = ''; }
+      });
   }
   
   function renderAllBoxes() { boxesData.forEach(d => { const b = el(d.id); if(b) { b.style.left = d.px + 'px'; b.style.top = d.py + 'px'; } }); }
@@ -800,8 +891,6 @@
           
           if(listeningBoxId) {
               el(listeningBoxId).classList.remove('listening');
-              let d = getBoxData(listeningBoxId);
-              applyBoxVisuals(el(listeningBoxId), d);
               listeningBoxId = null;
           }
           els('.box.selected').forEach(b => b.classList.remove('selected'));
@@ -819,7 +908,8 @@
       let d = getBoxData(id);
       d.bind = bindStr;
       if(bindStr !== '?' && !boxStats[bindStr]) boxStats[bindStr] = {h: 0, m: 0};
-      applyBoxVisuals(el(id), d);
+      applyBoxText(el(id), d);
+      if(showHeatmap) applyHeatmapVisuals();
       saveApp();
       
       let boxEl = el(id);
@@ -857,6 +947,15 @@
           dragPanel.style.top = (e.clientY - dpOffsetY) + 'px';
           return;
       }
+      
+      // TOOLTIP HEATMAP
+      const ht = el('heatmap-tooltip');
+      if (showHeatmap && e.target.classList.contains('box') && e.target.dataset.hmPrec) {
+          ht.style.display = 'block';
+          ht.innerHTML = `Précision : <b>${e.target.dataset.hmPrec}%</b><br>Frappes : <span style="color:#a6e3a1">${e.target.dataset.hmHits} ✅</span> / <span style="color:var(--elvui-error)">${e.target.dataset.hmMiss} ❌</span><br>Réactivité : <b>${e.target.dataset.hmRt}ms</b>`;
+          ht.style.left = (e.clientX + 15) + 'px';
+          ht.style.top = (e.clientY + 15) + 'px';
+      } else { ht.style.display = 'none'; }
 
       if(isPlayMode || isKeybindMode) return; 
       if(isPanning) { panX += (e.clientX - panStartX); panY += (e.clientY - panStartY); panStartX = e.clientX; panStartY = e.clientY; updateBoardTransform(); return; } 
@@ -938,7 +1037,37 @@
   // ==========================================
   // --- 8. CONFIGURATION & MENUS ---
   // ==========================================
-  function toggleHeatmap() { showHeatmap = !showHeatmap; el('btnHeatmap').style.fontWeight = showHeatmap ? 'bold' : 'normal'; boxesData.forEach(d => applyBoxVisuals(el(d.id), d)); }
+  function toggleHeatmap() { 
+      showHeatmap = !showHeatmap; 
+      if(!showHeatmap) { currentHeatmapData = null; clearHeatmapVisuals(); el('heatmap-tooltip').style.display = 'none'; }
+      else { applyHeatmapVisuals(); if(!currentHeatmapData) showToast("🔥 Heatmap Globale"); }
+      el('btnHeatmap').style.fontWeight = showHeatmap ? 'bold' : 'normal'; 
+  }
+
+  function viewLogHeatmap(id, pName) {
+      let p = appState.profiles[pName];
+      if(p) {
+          let log = p.logs.find(l => l.id === id);
+          if(log && log.keyStats) {
+              currentHeatmapData = log.keyStats;
+              showHeatmap = true;
+              el('btnHeatmap').style.fontWeight = 'bold';
+              applyHeatmapVisuals();
+              el('logs-panel').style.display = 'none';
+              showToast("🔥 Heatmap de la session affichée");
+          } else { alert("Pas de données détaillées pour cette ancienne session."); }
+      }
+  }
+  
+  function viewLastSessionHeatmap() {
+      currentHeatmapData = sessionStats;
+      showHeatmap = true;
+      el('btnHeatmap').style.fontWeight = 'bold';
+      applyHeatmapVisuals();
+      closeScore();
+      showToast("🔥 Heatmap de la dernière session");
+  }
+
   function saveSettings() { localStorage.setItem('wow_elvui_trainer_size', el('sizeSlider').value); localStorage.setItem('wow_elvui_trainer_snap', el('snapDivisor').value); }
   function loadSettings() { const sz = localStorage.getItem('wow_elvui_trainer_size'); if(sz) { el('sizeSlider').value = sz; el('sizeInput').value = sz; document.documentElement.style.setProperty('--box-size', sz+'px'); } else { document.documentElement.style.setProperty('--box-size', '40px'); } const sn = localStorage.getItem('wow_elvui_trainer_snap'); if(sn) el('snapDivisor').value = sn; else el('snapDivisor').value = '20'; updateBoardTransform(); }
   function saveTrainingConfig() { localStorage.setItem('wow_elvui_v48_cfg', JSON.stringify({ sound: el('cfgSound').checked, scale: el('cfgFontScale').value, saveLogs: el('cfgSaveLogs').checked, sprint: el('cfgSprint').value, rhythm: el('cfgRhythm').checked, blind: el('cfgBlind').checked, seq: el('cfgSequence').value, surv: el('cfgSurvival').checked, sp: el('cfgStartSpeed').value, st: el('cfgStep').value, to: el('cfgTimeout').value })); }
@@ -956,10 +1085,11 @@
   function spawnFCT(elBox, rTime, type, pts) { 
       const f = document.createElement('div'); 
       if(type === 'hit') {
-          if(rTime <= 350) { f.className = 'fct crit'; f.innerText = `+${pts}`; } 
-          else { f.className = 'fct normal-hit'; f.innerText = `+${pts}`; }
+          if(rTime <= 350) { f.className = 'fct crit'; f.innerText = `PARFAIT ! +${pts}`; } 
+          else if(rTime <= 600) { f.className = 'fct normal-hit'; f.innerText = `BIEN +${pts}`; }
+          else { f.className = 'fct normal-hit'; f.innerText = `LENT +${pts}`; f.style.color = '#f9e2af'; }
       } else { 
-          f.className = 'fct fall-miss'; f.innerText = pts ? `Raté ! -${pts}` : 'Raté !'; 
+          f.className = 'fct fall-miss'; f.innerText = pts ? `RATÉ ! -${pts}` : 'RATÉ !'; 
       }
       elBox.appendChild(f); setTimeout(() => f.remove(), 1000); 
   }
@@ -972,6 +1102,12 @@
           if(bEl) { 
               bEl.classList.add('pressed'); 
               setTimeout(() => bEl.classList.remove('pressed'), 100); 
+              
+              if (isPlayMode || (!isKeybindMode && !listeningBoxId)) {
+                  let sweep = document.createElement('div'); sweep.className = 'gcd-sweep';
+                  bEl.appendChild(sweep);
+                  setTimeout(() => sweep.remove(), 2000);
+              }
           } 
       }); 
   }
@@ -1106,6 +1242,7 @@
           
           let cdEl = el('countdown'); cdEl.style.display = 'block'; let count = 3; cdEl.innerText = count;
           b.innerText = "■ Arrêter"; b.className = "danger"; b.style.pointerEvents = 'none';
+          document.body.classList.add('playing-active');
           
           isPlayMode = true; 
           countdownTimerId = setInterval(() => {
@@ -1114,31 +1251,45 @@
               else { clearInterval(countdownTimerId); countdownTimerId = null; cdEl.innerText = "GO !"; playMilestoneSound(0); setTimeout(() => cdEl.style.display = 'none', 500); b.style.pointerEvents = 'auto'; startActualPlay(); }
           }, 1000);
       } else {
-          isPlayMode = false; b.innerText = "▶ Lancer"; b.className = "success"; b.style.pointerEvents = 'auto'; document.body.classList.remove('playing', 'bloodlust'); el('stats').style.display = "none";
+          isPlayMode = false; b.innerText = "▶ Lancer"; b.className = "success"; b.style.pointerEvents = 'auto'; document.body.classList.remove('playing', 'bloodlust', 'playing-active'); el('stats').style.display = "none";
           if(countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; el('countdown').style.display = 'none'; }
           clearTimeout(spawnTimeoutId); clearTimeout(failTimeoutId); clearInterval(sprintTimerId);
-          ['combo-counter', 'blind-prompt', 'timerVal', 'lives-display'].forEach(id => { if(el(id)) el(id).style.display = 'none'; }); document.body.removeAttribute('data-blind');
+          ['combo-counter', 'blind-prompt', 'timerVal', 'lives-display', 'sprint-bar-container'].forEach(id => { if(el(id)) el(id).style.display = 'none'; }); document.body.removeAttribute('data-blind');
           clearActiveTargets();
-          isProcessingInput = false; try { addLogSession(); } catch(e) { console.error(e); } boxesData.forEach(d => { let bx = el(d.id); if(bx) applyBoxVisuals(bx, d);});
+          isProcessingInput = false; try { addLogSession(); } catch(e) { console.error(e); } boxesData.forEach(d => { let bx = el(d.id); if(bx) applyBoxText(bx, d);});
+          if(showHeatmap) applyHeatmapVisuals();
       }
   }
 
   function startActualPlay() {
-      document.body.setAttribute('data-mode', 'PLAY'); document.body.classList.add('playing'); showHeatmap = false; if(el('btnHeatmap')) el('btnHeatmap').style.fontWeight = 'normal';
+      document.body.setAttribute('data-mode', 'PLAY'); document.body.classList.add('playing'); showHeatmap = false; if(el('btnHeatmap')) el('btnHeatmap').style.fontWeight = 'normal'; clearHeatmapVisuals(); el('heatmap-tooltip').style.display = 'none';
       sessionKeys.clear(); sessionStats = {}; score = 0;
       
       lockedBinds = {};
       
       if(el('cfgSurvival').checked) { currentLives = 3; updateLivesDisplay(); el('lives-display').style.display = 'block'; } else { el('lives-display').style.display = 'none'; }
 
-      boxesData.forEach(d => { let bxEl = el(d.id); if(bxEl){ bxEl.classList.remove('listening','selected'); bxEl.querySelectorAll('.rhythm-ring, .sequence-badge').forEach(o=>o.remove()); applyBoxVisuals(bxEl, d); } });
+      boxesData.forEach(d => { let bxEl = el(d.id); if(bxEl){ bxEl.classList.remove('listening','selected'); bxEl.querySelectorAll('.rhythm-ring, .sequence-badge').forEach(o=>o.remove()); applyBoxText(bxEl, d); } });
       el('stats').style.display = "flex"; hits = 0; misses = 0; totalReactTime = 0; currentDelay = parseInt(el('cfgStartSpeed').value); updateStats(); playSessionStart = performance.now(); 
       
       currentCombo = 0; maxCombo = 0; el('combo-counter').innerText = "0 Combo"; el('combo-counter').style.display = 'block'; 
       if(el('cfgBlind').checked) { document.body.setAttribute('data-blind', 'true'); el('blind-prompt').style.display = 'block'; el('blind-prompt').innerText = '...'; } 
       
       const sV = parseInt(el('cfgSprint').value) || 0; 
-      if(sV > 0 && !el('cfgSurvival').checked) { el('timerVal').style.display = 'inline'; sprintTimerId = setInterval(() => { let left = sV * 1000 - (performance.now() - playSessionStart); if(left <= 0) { togglePlayMode(); showScoreModal(); return; } el('timerVal').innerText = `⏱️ ${Math.ceil(left/1000)}s`; }, 100); } 
+      if(sV > 0 && !el('cfgSurvival').checked) { 
+          el('timerVal').style.display = 'inline'; 
+          el('sprint-bar-container').style.display = 'block';
+          
+          sprintTimerId = setInterval(() => { 
+              let left = sV * 1000 - (performance.now() - playSessionStart); 
+              if(left <= 0) { togglePlayMode(); showScoreModal(); return; } 
+              el('timerVal').innerText = `⏱️ ${Math.ceil(left/1000)}s`; 
+              
+              let pct = (left / (sV * 1000)) * 100;
+              el('sprint-bar-fill').style.width = pct + '%';
+              if(left <= 10000) el('sprint-bar-fill').classList.add('execute'); else el('sprint-bar-fill').classList.remove('execute');
+          }, 100); 
+      } 
       
       triggerNextTarget();
   }
@@ -1189,11 +1340,26 @@
       else { document.body.classList.remove('bloodlust'); }
   }
   
+  function getParseRank(acc, apm) {
+      let apmFactor = Math.min(1.2, apm / 60); 
+      let parseScore = acc * apmFactor;
+      if(parseScore >= 95) return { rank: 'S', class: 'parse-s' };
+      if(parseScore >= 80) return { rank: 'A', class: 'parse-a' };
+      if(parseScore >= 60) return { rank: 'B', class: 'parse-b' };
+      if(parseScore >= 40) return { rank: 'C', class: 'parse-c' };
+      return { rank: 'D', class: 'parse-d' };
+  }
+
   function showScoreModal() { 
       let acc = hits + misses > 0 ? Math.round((hits/(hits+misses))*100) : 0; let r = hits > 0 ? Math.round(totalReactTime/hits) : 0; let dur = (performance.now() - playSessionStart) / 60000; let apm = dur > 0 ? Math.round((hits+misses)/dur) : 0; 
       el('sm-acc').innerText = acc + "%"; el('sm-apm').innerText = apm; el('sm-react').innerText = r + " ms"; el('sm-combo').innerText = maxCombo; el('sm-hits').innerText = hits; el('sm-misses').innerText = misses; 
       el('sm-score').innerText = score;
       
+      let parse = getParseRank(acc, apm);
+      let pEl = el('parse-rank');
+      pEl.innerText = parse.rank;
+      pEl.className = parse.class;
+
       let wkArray = Object.keys(sessionStats).map(k => ({ bind: k, h: sessionStats[k].h, m: sessionStats[k].m, avgRt: sessionStats[k].h > 0 ? Math.round(sessionStats[k].rt / sessionStats[k].h) : 0 })).filter(k => k.m > 0 || k.h > 0);
       wkArray.sort((a, b) => b.m - a.m || b.avgRt - a.avgRt);
       let top3 = wkArray.slice(0, 3);
@@ -1202,13 +1368,16 @@
       
       el('score-modal').style.display = 'block'; 
   }
+  
   function closeScore() { el('score-modal').style.display = 'none'; }
+  function retrySession() { closeScore(); if(!isPlayMode) { togglePlayMode(); } }
   
   function shareToDiscord() {
       let acc = hits + misses > 0 ? Math.round((hits/(hits+misses))*100) : 0; 
       let r = hits > 0 ? Math.round(totalReactTime/hits) : 0; 
       let dur = (performance.now() - playSessionStart) / 60000; 
       let apm = dur > 0 ? Math.round((hits+misses)/dur) : 0;
+      let parse = getParseRank(acc, apm);
       
       let act = document.querySelector('.preset-btn.active-preset'); 
       let pDifficulty = act ? act.innerText.split(' (')[0] : 'Personnalisé';
@@ -1219,6 +1388,7 @@
       
       let text = `🎯 **WoW Shortcut Trainer** - Session Terminée !\n` +
                  `👤 Profil : **${appState.currentProfile}** | Mode : **${pDifficulty}**\n\n` +
+                 `🏆 Rang : **[ ${parse.rank} ]**\n` +
                  `📊 **Statistiques :**\n` +
                  `⚡ APM : **${apm}** (Score : ${score})\n` +
                  `🎯 Précision : **${acc}%** (${hits} ✅ / ${misses} ❌)\n` +
@@ -1240,7 +1410,12 @@
       let act = document.querySelector('.preset-btn.active-preset'); let pDifficulty = act ? act.innerText.split(' (')[0] : 'Perso';
       if(el('cfgSurvival').checked) pDifficulty += " (Survie)"; if(parseInt(el('cfgSequence').value) > 1) pDifficulty += " (Séquence)";
       const n = new Date(); const dStr = `${n.getDate().toString().padStart(2,'0')}/${(n.getMonth()+1).toString().padStart(2,'0')} ${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}`; 
-      let logObj = { id: Date.now(), date: dStr, profile: pDifficulty, hits, misses, accuracy: acc, avgReact: r, apm, score };
+      
+      let logObj = { 
+          id: Date.now(), date: dStr, profile: pDifficulty, hits, misses, accuracy: acc, avgReact: r, apm, score,
+          keyStats: JSON.parse(JSON.stringify(sessionStats)) 
+      };
+      
       let p = appState.profiles[appState.currentProfile]; if(!p) return; if(!p.logs) p.logs = [];
       p.logs.unshift(logObj);
       saveTrainingConfig(); saveApp(); 
@@ -1251,11 +1426,13 @@
       let allLogs = [];
       Object.keys(appState.profiles).forEach(k => { let p = appState.profiles[k]; let logs = p.logs || []; let logsWithProfileName = logs.map(l => ({...l, profileName: k})); allLogs = allLogs.concat(logsWithProfileName); });
       allLogs.sort((a, b) => b.id - a.id);
-      if(!allLogs.length) { b.innerHTML = '<tr><td colspan="7">Aucun log.</td></tr>'; el('log-total-sessions').innerText = 0; el('log-avg-acc').innerText = '0%'; el('log-avg-apm').innerText = 0; return; } 
+      if(!allLogs.length) { b.innerHTML = '<tr><td colspan="8">Aucun log.</td></tr>'; el('log-total-sessions').innerText = 0; el('log-avg-acc').innerText = '0%'; el('log-avg-apm').innerText = 0; return; } 
       let th = 0, tm = 0, tr = 0, nr = 0, ta = 0; 
       allLogs.forEach(log => { 
           th += log.hits; tm += log.misses; if(log.hits > 0){ tr += log.avgReact; nr++; ta += log.apm; } const row = document.createElement('tr'); 
-          row.innerHTML = `<td>${log.date}</td><td><b>${log.profileName}</b><br><span style="font-size:9px;color:#6c7086">${log.profile}</span></td><td>${log.hits}</td><td>${log.accuracy}%</td><td>${log.avgReact}ms / ${log.apm} APM<br><span style="color:#cba6f7">${log.score||0} pts</span></td><td><button onclick="deleteLog(${log.id}, '${log.profileName}')">✖</button></td>`; 
+          row.innerHTML = `<td>${log.date}</td><td><b>${log.profileName}</b><br><span style="font-size:9px;color:#6c7086">${log.profile}</span></td><td>${log.hits}</td><td>${log.accuracy}%</td><td>${log.avgReact}ms / ${log.apm} APM<br><span style="color:#cba6f7">${log.score||0} pts</span></td>
+          <td><button style="padding:2px 5px; background:transparent; border:none; font-size:14px; cursor:pointer;" onclick="viewLogHeatmap(${log.id}, '${log.profileName}')" title="Voir la Heatmap de cette session">👁️</button></td>
+          <td><button onclick="deleteLog(${log.id}, '${log.profileName}')">✖</button></td>`; 
           b.appendChild(row); 
       }); 
       el('log-total-sessions').innerText = allLogs.length; el('log-avg-acc').innerText = Math.round((th/(th+tm))*100) + '%'; el('log-avg-apm').innerText = nr > 0 ? Math.round(ta/nr) : 0; 
@@ -1292,7 +1469,7 @@
   window.addEventListener('keydown', (e) => { 
       if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
 
-      if(e.key !== 'Escape') {
+      if(e.key !== 'Escape' && e.key !== 'F12') {
           e.preventDefault();
       }
 
